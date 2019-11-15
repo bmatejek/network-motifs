@@ -34,6 +34,9 @@ def ReadEmreJSONTrace(json_filename):
         # what type of node is this
         variance = node['span']['variant']
 
+        # don't worry about annotated nodes
+        if (variance == 'Annotation'): continue
+
         json_nodes.append(JSONNode(trace_id, tracepoint_id, timestamp, variance))
 
     for edge in edges:
