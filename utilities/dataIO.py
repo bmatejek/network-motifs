@@ -4,7 +4,7 @@ import json
 import pandas as pd
 
 
-from network_motifs.data_structures.open_stack import JSONTrace, JSONNode, JSONEdge
+from network_motifs.data_structures.open_stack import OpenStackTrace, OpenStackNode, OpenStackEdge
 
 
 
@@ -43,12 +43,12 @@ def ReadOpenStackJSONTrace(json_filename):
     request_type = data['request_type']
 
     # read all nodes and edges from the graph
-    nodes = graph['nodes']
-    edges = graph['edges']
+    json_nodes = graph['nodes']
+    json_edges = graph['edges']
 
     # create new lists for the internal format
-    json_nodes = []
-    json_edges = []
+    nodes = []
+    edges = []
 
     # cannot handle node holes at the moment
     assert (not len(graph['node_holes']))
@@ -57,37 +57,37 @@ def ReadOpenStackJSONTrace(json_filename):
     assert (graph['edge_property'] == 'directed')
 
     # create a new graph structure for each trace
-    for node in nodes:
+    for json_node in json_nodes:
         # the unique identifier for this node
-        trace_id = node['span']['trace_id']
+        trace_id = json_node['span']['trace_id']
         # the parent that led to this node
-        parent_id = node['span']['parent_id']
+        parent_id = json_node['span']['parent_id']
         # the actual function that is envoked
-        tracepoint_id = node['span']['tracepoint_id']
+        tracepoint_id = json_node['span']['tracepoint_id']
         # the time of this particular action
-        timestamp = pd.to_datetime(node['span']['timestamp'])
+        timestamp = pd.to_datetime(json_node['span']['timestamp'])
         # the action associated with this node (entry, exit, or annotation)
-        variant = node['span']['variant']
+        variant = json_node['span']['variant']
 
-        json_nodes.append(JSONNode(trace_id, parent_id, tracepoint_id, timestamp, variant))
+        nodes.append(OpenStackNode(trace_id, parent_id, tracepoint_id, timestamp, variant))
 
-    for edge in edges:
+    for json_edge in json_edges:
         # get the source and destination nodes
-        source = edge[0]
-        destination = edge[1]
+        source = json_edge[0]
+        destination = json_edge[1]
 
         # get the time for this edge
-        seconds = edge[2]['duration']['secs']
-        nanoseconds = edge[2]['duration']['nanos']
+        seconds = json_edge[2]['duration']['secs']
+        nanoseconds = json_edge[2]['duration']['nanos']
         duration = seconds * 10 ** 9 + nanoseconds
 
         # make sure that the edge takes a non trivial amount of time
         assert (not duration == 1)
 
         # the action associated with this node
-        variant = edge[2]['variant']
+        variant = json_edge[2]['variant']
 
-        json_edges.append(JSONEdge(source, destination, duration, variant))
+        edges.append(OpenStackEdge(source, destination, duration, variant))
 
     # create the new json trace object
-    return JSONTrace(json_nodes, json_edges, request_type)
+    return OpenStackTrace(nodes, edges, request_type)
