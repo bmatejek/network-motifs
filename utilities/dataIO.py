@@ -87,7 +87,7 @@ def ReadOpenStackJSONTrace(json_filename):
         # the action associated with this node
         variant = json_edge[2]['variant']
 
-        edges.append(OpenStackEdge(source, destination, duration, variant))
+        edges.append(OpenStackEdge(nodes, source, destination, duration, variant))
 
     # create the new json trace object
-    return OpenStackTrace(nodes, edges, request_type)
+    return OpenStackTrace(nodes, edges, request_type, base_id)
