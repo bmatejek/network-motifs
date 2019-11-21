@@ -2,6 +2,27 @@ import random
 
 
 
+# variable to control the maximum order of markov chains
+max_order = 4
+
+
+def ToOrdinal(value):
+    if value % 100//10 != 1:
+        if value % 10 == 1:
+            ordval = '{}st'.format(value)
+        elif value % 10 == 2:
+            ordval = '{}nd'.format(value)
+        elif value % 10 == 3:
+            ordval = '{}rd'.format(value)
+        else:
+            ordval = '{}th'.format(value)
+    else:
+        ordval = '{}th'.format(value)
+
+    return ordval
+
+
+
 def GenerateTransitionMatrix(counts):
     transitions = {}
 
@@ -29,176 +50,152 @@ def GenerateTransitionMatrix(counts):
 
 def TrainMarkovChain(training_traces):
     # next estimates are aggregated over all training_traces
-    first_order_counts = {}
-    second_order_counts = {}
-    third_order_counts = {}
+    counts = {}
 
     # train the Markov model
     for trace in training_traces:
         # go through all of the nodes
         for node in trace.nodes:
-            # get the parent of this node
-            parent_node = node.parent_node
-            # get the grandparent of this node
-            if not parent_node == None:
-                grandparent_node = parent_node.parent_node
-            else:
-                grandparent_node = None
-            # get the great-grandparent of this node
-            if not grandparent_node == None:
-                greatgrandparent_node = grandparent_node.parent_node
-            else:
-                greatgrandparent_node = None
+            # skip nodes that are the first envoked
+            if node.parent_id == trace.base_id: continue
 
+            # get the action associated with this node
             node_action = '{} {}'.format(node.tracepoint_id, node.variant)
 
-            # add to the dictionary for first order chains
-            if parent_node == None: continue
-            parent_action = '{} {}'.format(parent_node.tracepoint_id, parent_node.variant)
-            if not parent_action in first_order_counts:
-                first_order_counts[parent_action] = {}
-            if not node_action in first_order_counts[parent_action]:
-                first_order_counts[parent_action][node_action] = 1
-            else:
-                first_order_counts[parent_action][node_action] += 1
+            # continue until the ancestor no longer exists
+            ancestor_node = node.parent_node
 
-            # add to the dictionary for second order chains
-            if grandparent_node == None: continue
-            grandparent_action = '{} {}'.format(grandparent_node.tracepoint_id, grandparent_node.variant)
-            if not (grandparent_action, parent_action) in second_order_counts:
-                second_order_counts[(grandparent_action, parent_action)] = {}
-            if not node_action in second_order_counts[(grandparent_action, parent_action)]:
-                second_order_counts[(grandparent_action, parent_action)][node_action] = 1
-            else:
-                second_order_counts[(grandparent_action, parent_action)][node_action] += 1
+            key = ()            # keep a record of the keys for each loop iteration
+            order = 1           # restrict how many orders are allowed
+            while not ancestor_node == None:
+                ancestor_action = '{} {}'.format(ancestor_node.tracepoint_id, ancestor_node.variant)
+                key = (ancestor_action,) + key
 
-            # add to the dictionary for third order chains
-            if greatgrandparent_node == None: continue
-            greatgrandparent_action = '{} {}'.format(greatgrandparent_node.tracepoint_id, greatgrandparent_node.variant)
-            if not (greatgrandparent_action, grandparent_action, parent_action) in third_order_counts:
-                third_order_counts[(greatgrandparent_action, grandparent_action, parent_action)] = {}
-            if not node_action in third_order_counts[(greatgrandparent_action, grandparent_action, parent_action)]:
-                third_order_counts[(greatgrandparent_action, grandparent_action, parent_action)][node_action] = 1
-            else:
-                third_order_counts[(greatgrandparent_action, grandparent_action, parent_action)][node_action] += 1
+                # add this key to the list of transitions
+                if not key in counts:
+                    counts[key] = {}
+                # add the target to the array of transitions
+                if not node_action in counts[key]:
+                    counts[key][node_action] = 1
+                else:
+                    counts[key][node_action] += 1
 
-    first_order_transitions = GenerateTransitionMatrix(first_order_counts)
-    second_order_transitions = GenerateTransitionMatrix(second_order_counts)
-    third_order_transitions = GenerateTransitionMatrix(third_order_counts)
+                # update to the parent of the current ancestor
+                ancestor_node = ancestor_node.parent_node
 
-    return first_order_transitions, second_order_transitions, third_order_transitions
+                # sensible restrictions to the maximum value of the chain
+                if order == max_order: break
+                order += 1
+
+    # convert the counts from above to transitions from a given key
+    transitions = GenerateTransitionMatrix(counts)
+
+    return transitions
 
 
 
-def TestMarkovChain(traces, first_order_transitions, second_order_transitions, third_order_transitions, dataset, print_verbose=False):
-    # keep track of correctly predicted transitions
-    nincomplete_information = 0
-    nfirst_order_correct = 0
-    nfirst_order_incorrect = 0
-    nsecond_order_correct = 0
-    nsecond_order_incorrect = 0
-    nthird_order_correct = 0
-    nthird_order_incorrect = 0
+def TestMarkovChain(traces, transitions, dataset, print_verbose=False):
+    # create counts for the correct/incorrect for each order markov chain
+    ncorrect_transitions = [0 for _ in range(max_order)]
+    nincorrect_transitions = [0 for _ in range(max_order)]
+    nincomplete_information = [0 for _ in range(max_order)]
 
     # go through each testing trace
     for trace in traces:
-        # # keep statistics for each trace as well
-        # ncorrect_transitions = 0
-        # nincorrect_transitions = 0
-        # nincomplete_information = 0
-
         # go through all of the nodes
         for node in trace.nodes:
-            # get the parent of this node
-            parent_node = node.parent_node
-            # don't worry about things that start a chain
-            if parent_node == None: continue
+            # skip nodes that are the first envoked
+            if node.parent_id == trace.base_id: continue
 
+            # get the action associated with this node
             ground_truth_action = '{} {}'.format(node.tracepoint_id, node.variant)
 
-            parent_key = '{} {}'.format(parent_node.tracepoint_id, parent_node.variant)
+            # start with the parent of this node
+            ancestor_node = node.parent_node
 
-            if not parent_key in first_order_transitions:
-                nincomplete_information += 1
-                continue
+            # keep track of the lower order result
+            # 0 is incorrect, 1 is correct, 2 is incomplete
+            previous_result = 2
 
-            action_selection = random.random()
+            # continue for all allowable orders
+            key = ()
+            for order in range(max_order):
+                # do not continue down this chain, just use the previous result
+                if ancestor_node == None:
+                    if previous_result == 0: nincorrect_transitions[order] += 1
+                    elif previous_result == 1: ncorrect_transitions[order] += 1
+                    elif previous_result == 2: nincomplete_information[order] += 1
+                    else: assert (False)
 
-            # get the results for the first order approximation
-            for (probability, action) in first_order_transitions[parent_key]:
-                if probability < action_selection:
-                    break
+                    # continue to the next order
+                    continue
 
-            first_order_success = (action == ground_truth_action)
+                # get the action for this ancestor
+                ancestor_action = '{} {}'.format(ancestor_node.tracepoint_id, ancestor_node.variant)
+                key = (ancestor_action,) + key
 
-            # get the grandparent of this node
-            grandparent_node = parent_node.parent_node
-            if grandparent_node == None:
-                second_order_success = first_order_success
-            else:
-                grandparent_key = '{} {}'.format(grandparent_node.tracepoint_id, grandparent_node.variant)
-                if not (grandparent_key, parent_key) in second_order_transitions:
-                    second_order_success == first_order_success
+                # if this nevery happened before, use previous result
+                if not key in transitions:
+                    if previous_result == 0: nincorrect_transitions[order] += 1
+                    elif previous_result == 1: ncorrect_transitions[order] += 1
+                    elif previous_result == 2: nincomplete_information[order] += 1
+                    else: assert (False)
+
+                    # continue to the next order
+                    continue
+
+                selected_action = random.random()
+
+                for (probability, action) in transitions[key]:
+                    if probability < selected_action:
+                        break
+
+                if action == ground_truth_action:
+                    previous_result = 1
+                    ncorrect_transitions[order] += 1
                 else:
-                    action_selection = random.random()
+                    previous_result = 0
+                    nincorrect_transitions[order] += 1
 
-                    # get the results for the second order approximation
-                    for (probability, action) in second_order_transitions[(grandparent_key, parent_key)]:
-                        if probability < action_selection:
-                            break
+                # update the ancestor node
+                ancestor_node = ancestor_node.parent_node
 
-                    second_order_success = (action == ground_truth_action)
+    for iv in range(max_order):
+        order = iv + 1
+        print ('{} Order Markov Chain {}'.format(ToOrdinal(order), dataset))
+        print ('  Correct: {}'.format(ncorrect_transitions[iv]))
+        print ('  Incorrect: {}'.format(nincorrect_transitions[iv]))
+        print ('  Incomplete: {}'.format(nincomplete_information[iv]))
+        print ('  Accuracy: {:0.2f}%'.format(100 * ncorrect_transitions[iv] / (ncorrect_transitions[iv] + nincorrect_transitions[iv] + nincomplete_information[iv])))
+        print ()
 
-            # get the great grandparent of this node
-            if grandparent_node == None:
-                third_order_success = second_order_success
-            else:
-                greatgrandparent_node = grandparent_node.parent_node
-                if greatgrandparent_node == None:
-                    third_order_success = second_order_success
-                else:
-                    greatgrandparent_key = '{} {}'.format(greatgrandparent_node.tracepoint_id, greatgrandparent_node.variant)
-                    if not (greatgrandparent_key, grandparent_key, parent_key) in third_order_transitions:
-                        third_order_success = first_order_success
-                    else:
-                        action_selection = random.random()
 
-                        # get the results for the third order approximation
-                        for (probability, action) in third_order_transitions[(greatgrandparent_key, grandparent_key, parent_key)]:
-                            if probability < action_selection:
-                                break
 
-                        third_order_success = (action == ground_truth_action)
 
-            if first_order_success: nfirst_order_correct += 1
-            else: nfirst_order_incorrect += 1
 
-            if second_order_success: nsecond_order_correct += 1
-            else: nsecond_order_incorrect += 1
 
-            if third_order_success: nthird_order_correct += 1
-            else: nthird_order_incorrect += 1
-
-    # print statistics
-    print ('First Order Markov Chain {}'.format(dataset))
-    print ('  Correct: {}'.format(nfirst_order_correct))
-    print ('  Incorrect: {}'.format(nfirst_order_incorrect))
-    print ('  Incomplete: {}'.format(nincomplete_information))
-    print ('  Accuracy: {:0.2f}%'.format(100 * nfirst_order_correct / (nfirst_order_correct + nfirst_order_incorrect + nincomplete_information)))
-    print ()
-
-    # print statistics
-    print ('Second Order Markov Chain {}'.format(dataset))
-    print ('  Correct: {}'.format(nsecond_order_correct))
-    print ('  Incorrect: {}'.format(nsecond_order_incorrect))
-    print ('  Incomplete: {}'.format(nincomplete_information))
-    print ('  Accuracy: {:0.2f}%'.format(100 * nsecond_order_correct / (nsecond_order_correct + nsecond_order_incorrect + nincomplete_information)))
-    print ()
-
-    # print statistics
-    print ('Third Order Markov Chain {}'.format(dataset))
-    print ('  Correct: {}'.format(nthird_order_correct))
-    print ('  Incorrect: {}'.format(nthird_order_incorrect))
-    print ('  Incomplete: {}'.format(nincomplete_information))
-    print ('  Accuracy: {:0.2f}%'.format(100 * nthird_order_correct / (nthird_order_correct + nthird_order_incorrect + nincomplete_information)))
-    print ()
+    #
+    #
+    # # print statistics
+    # print ('First Order Markov Chain {}'.format(dataset))
+    # print ('  Correct: {}'.format(nfirst_order_correct))
+    # print ('  Incorrect: {}'.format(nfirst_order_incorrect))
+    # print ('  Incomplete: {}'.format(nincomplete_information))
+    # print ('  Accuracy: {:0.2f}%'.format(100 * nfirst_order_correct / (nfirst_order_correct + nfirst_order_incorrect + nincomplete_information)))
+    # print ()
+    #
+    # # print statistics
+    # print ('Second Order Markov Chain {}'.format(dataset))
+    # print ('  Correct: {}'.format(nsecond_order_correct))
+    # print ('  Incorrect: {}'.format(nsecond_order_incorrect))
+    # print ('  Incomplete: {}'.format(nincomplete_information))
+    # print ('  Accuracy: {:0.2f}%'.format(100 * nsecond_order_correct / (nsecond_order_correct + nsecond_order_incorrect + nincomplete_information)))
+    # print ()
+    #
+    # # print statistics
+    # print ('Third Order Markov Chain {}'.format(dataset))
+    # print ('  Correct: {}'.format(nthird_order_correct))
+    # print ('  Incorrect: {}'.format(nthird_order_incorrect))
+    # print ('  Incomplete: {}'.format(nincomplete_information))
+    # print ('  Accuracy: {:0.2f}%'.format(100 * nthird_order_correct / (nthird_order_correct + nthird_order_incorrect + nincomplete_information)))
+    # print ()
