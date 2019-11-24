@@ -18,11 +18,25 @@ def VerifyKeys(data, keys):
 
 
 
+def ReadOpenStackTrainingFilenames():
+    training_list_filename = 'openstack-json/training-open-stack-traces.txt'
+    with open(training_list_filename, 'r') as fd:
+        return fd.read().splitlines()
+
+
+
+def ReadOpenStackTestingFilenames():
+    testing_list_filename = 'openstack-json/testing-open-stack-traces.txt'
+    with open(testing_list_filename, 'r') as fd:
+        return fd.read().splitlines()
+
+
+
 def ReadOpenStackJSONTrace(json_filename):
     # open the JSON file
     with open(json_filename, 'r') as fd:
         data = json.load(fd)
-    #print (json_filename)
+
     # verify the json file follows the expected format
     VerifyKeys(data, ['g', 'base_id', 'start_node', 'end_node', 'request_type'])
 
@@ -91,3 +105,42 @@ def ReadOpenStackJSONTrace(json_filename):
 
     # create the new json trace object
     return OpenStackTrace(nodes, edges, request_type, base_id)
+
+
+
+def ReadXTraceJSONTrace(json_filename):
+    # open the JSON file
+    with open(json_filename, 'r') as fd:
+        data = json.load(fd)
+
+    # verify the json file follows the expected format
+    VerifyKeys(data, ['id', 'reports'])
+
+    # read the base id for this trace
+    base_id = data['id']
+    assert (base_id in json_filename)
+
+    # read in the data from the reports
+    reports = data['reports']
+    nnodes = len(reports)
+
+    # go through each function in the report
+    for report in reports:
+        # get the event and parent id
+        event_id = report['EventID']
+        parent_id = report['ParentEventID']
+
+        # get the time of this action
+        timestamp = pd.to_datetime(report['Timestamp'])
+
+        if not 'Source' in report:
+            print (report)
+        else:
+            print (report['Source'])
+            print (parent_id)
+
+        label = report['Label']
+
+
+
+    exit()

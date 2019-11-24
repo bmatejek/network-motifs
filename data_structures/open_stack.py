@@ -2,7 +2,7 @@ class OpenStackTrace:
     def __init__(self, nodes, edges, request_type, base_id):
         self.nodes = nodes
         self.edges = edges
-        self.request = request_type
+        self.request_type = request_type
         self.id_to_node = {}
         self.base_id = base_id
 

@@ -6,6 +6,7 @@ import random
 max_order = 4
 
 
+
 def ToOrdinal(value):
     if value % 100//10 != 1:
         if value % 10 == 1:
