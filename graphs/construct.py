@@ -1,312 +1,52 @@
-import numpy as np
-
-
-from network_motifs.data_structures.graph import Node
+import networkx as nx
 
 
 
-def ConvertJSON2DAGGraph(json_nodes, json_edges):
-    # get a list of all functions
-    function_set = set()
-    functions = []
+def OriginalGraph(dataset, trace):
+    nodes = trace.nodes
+    edges = trace.edges
 
-    for json_node in json_nodes:
-        if not json_node.function in function_set:
-            functions.append(json_node.function)
+    # create a directred graph
+    graph = nx.DiGraph()
 
-        function_set.add(json_node.function)
-
-    # there is a single node per function
-    functions_to_nodes = {}
-
-    nodes = []
-    edges = []
-
-    for index, function in enumerate(functions):
-        functions_to_nodes[function] = index
-        nodes.append(Node(function, index))
-
-    # keep track of the function stack
-    function_stack = []
-    # where in the graph are we currently
-    current_node_index = -1
-    # where are we in the JSON file
-    json_node_index = 0
-    njson_nodes = len(json_nodes)
-
-    # we collapse all exits to create loops
-    collapsing_exits = False
-
-    while json_node_index < njson_nodes:
-        json_node = json_nodes[json_node_index]
-
-        # start of a new function loop
-        if current_node_index == -1:
-            # make sure this node is an entry
-            assert (json_node.variance == 'Entry')
-
-            # update the current node that we are at
-            current_node_index = functions_to_nodes[json_node.function]
-
-            # add this function to the stack
-            function_stack.append(json_node.function)
-
-            # increment the json node index
-            json_node_index += 1
-        # if you are entering a new function the current node called this one
-        elif json_node.variance == 'Entry':
-            # what is the new node index
-            next_node_index = functions_to_nodes[json_node.function]
-
-            # there is an edge from the previous node to this one
-            edges.append((current_node_index, next_node_index))
-
-            # update the current node index
-            current_node_index = next_node_index
-
-            # add this function to the stack
-            function_stack.append(json_node.function)
-
-            # increment the json node index
-            json_node_index += 1
-        # otherwise we are returning to the previous function on the stack
-        else:
-            # pop the last element from the stack
-            assert (function_stack.pop() == json_node.function)
-
-            # have left this complete function call
-            if not len(function_stack):
-                next_node_index = functions_to_nodes[json_node.function]
-
-                current_node_index = -1
-
-                # increment the json node index
-                json_node_index += 1
-
-                # start anew
-                continue
-
-            # the new next node is the last thing on the stack
-            next_node_index = functions_to_nodes[function_stack[-1]]
-
-            # update the current node index
-            current_node_index = next_node_index
-
-            # increment the json node index
-            json_node_index += 1
-
-    # create the list of weighted edges
-    aggregated_edges = {}
+    for index, node in enumerate(nodes):
+        graph.add_node(index, label=node.Name())
 
     for edge in edges:
-        if not edge in aggregated_edges:
-            aggregated_edges[edge] = 1
-        else:
-            aggregated_edges[edge] += 1
+        graph.add_edge(trace.node_to_index[edge.source], trace.node_to_index[edge.destination])
 
-    return nodes, aggregated_edges
+    # save the graph into dot format
+    A = nx.nx_agraph.to_agraph(graph)
+    A.layout(prog='dot')
+    A.draw('{}-dot/{}.dot'.format(dataset, trace.base_id))
 
 
 
-def ConvertJSON2StackGraph(json_nodes, json_edges):
-    # get a list of all functions
-    function_set = set()
-    functions = []
+def StackedGraph(dataset, trace):
+    nodes = trace.nodes
+    edges = trace.edges
 
-    for json_node in json_nodes:
-        if not json_node.function in function_set:
-            functions.append(json_node.function)
+    # create a directed graph
+    graph = nx.DiGraph()
 
-        function_set.add(json_node.function)
+    # get the list of unique names
+    node_names = set()
+    for node in nodes:
+        node_names.add(node.Name())
 
-    # there is a single node per function
-    functions_to_nodes = {}
-
-    nodes = []
-    edges = []
-
-    for index, function in enumerate(functions):
-        functions_to_nodes[function] = index
-        nodes.append(Node(function, index))
-
-    # keep track of the function stack
-    function_stack = []
-    # where in the graph are we currently
-    current_node_index = -1
-    # where are we in the JSON file
-    json_node_index = 0
-    njson_nodes = len(json_nodes)
-
-    # we collapse all exits to create loops
-    collapsing_exits = 0
-
-    while json_node_index < njson_nodes:
-        json_node = json_nodes[json_node_index]
-
-        # start of a new function loop
-        if current_node_index == -1:
-            # make sure this node is an entry
-            assert (json_node.variance == 'Entry')
-
-            # update the current node that we are at
-            current_node_index = functions_to_nodes[json_node.function]
-
-            # add this function to the stack
-            function_stack.append(json_node.function)
-
-            # increment the json node index
-            json_node_index += 1
-        # if you are entering a new function the current node called this one
-        elif json_node.variance == 'Entry':
-            # what is the new node index
-            next_node_index = functions_to_nodes[json_node.function]
-
-            # there is an edge from the previous node to this one
-            edges.append((current_node_index, next_node_index))
-
-            # update the current node index
-            current_node_index = next_node_index
-
-            # add this function to the stack
-            function_stack.append(json_node.function)
-
-            # increment the json node index
-            json_node_index += 1
-        # otherwise we are returning to the previous function on the stack
-        else:
-            # pop the last element from the stack
-            assert (function_stack.pop() == json_node.function)
-
-            # have left this complete function call
-            if not len(function_stack):
-                next_node_index = functions_to_nodes[json_node.function]
-
-                #edges.append((current_node_index, next_node_index))
-
-                current_node_index = -1
-
-                # increment the json node index
-                json_node_index += 1
-
-                # start anew
-                continue
-
-            # the new next node is the last thing on the stack
-            next_node_index = functions_to_nodes[function_stack[-1]]
-            edges.append((current_node_index, next_node_index))
-
-            # update the current node index
-            current_node_index = next_node_index
-
-            # increment the json node index
-            json_node_index += 1
-
-    # create the list of weighted edges
-    aggregated_edges = {}
+    # create the nodes by name and the index mapping
+    node_name_to_index = {}
+    for index, node_name in enumerate(sorted(list(node_names))):
+        graph.add_node(index, label=node_name)
+        node_name_to_index[node_name] = index
 
     for edge in edges:
-        if not edge in aggregated_edges:
-            aggregated_edges[edge] = 1
-        else:
-            aggregated_edges[edge] += 1
+        source_index = node_name_to_index[edge.source.Name()]
+        destination_index = node_name_to_index[edge.destination.Name()]
 
-    return nodes, aggregated_edges
+        graph.add_edge(source_index, destination_index)
 
-
-
-def ConvertJSON2Graph(json_nodes, json_edges):
-    # get a list of all functions
-    function_set = set()
-    functions = []
-
-    for json_node in json_nodes:
-        if not json_node.function in function_set:
-            functions.append(json_node.function)
-
-        function_set.add(json_node.function)
-
-    # there is a single node per function
-    functions_to_nodes = {}
-
-    nodes = []
-    edges = []
-
-    for index, function in enumerate(functions):
-        functions_to_nodes[function] = index
-        nodes.append(Node(function, index))
-
-    # keep track of the function stack
-    function_stack = []
-    # where in the graph are we currently
-    current_node_index = -1
-    # where are we in the JSON file
-    json_node_index = 0
-    njson_nodes = len(json_nodes)
-
-    # we collapse all exits to create loops
-    collapsing_exits = 0
-
-    while json_node_index < njson_nodes:
-        json_node = json_nodes[json_node_index]
-
-        # start of a new function loop
-        if current_node_index == -1:
-            # make sure this node is an entry
-            assert (json_node.variance == 'Entry')
-
-            # update the current node that we are at
-            current_node_index = functions_to_nodes[json_node.function]
-
-            # add this function to the stack
-            function_stack.append(json_node.function)
-
-            # increment the json node index
-            json_node_index += 1
-        # if you are entering a new function the current node called this one
-        elif json_node.variance == 'Entry':
-            # what is the new node index
-            next_node_index = functions_to_nodes[json_node.function]
-
-            # there is an edge from the previous node to this one
-            edges.append((current_node_index, next_node_index))
-
-            # update the current node index
-            current_node_index = next_node_index
-
-            # add this function to the stack
-            function_stack.append(json_node.function)
-
-            # increment the json node index
-            json_node_index += 1
-        # otherwise we are returning to the previous function on the stack
-        else:
-            # pop the last element from the stack
-            assert (function_stack.pop() == json_node.function)
-
-            # have left this complete function call
-            if not len(function_stack):
-                next_node_index = functions_to_nodes[json_node.function]
-
-                edges.append((current_node_index, next_node_index))
-
-                current_node_index = -1
-
-                # increment the json node index
-                json_node_index += 1
-
-                # start anew
-                continue
-
-            # increment the json node index
-            json_node_index += 1
-
-    # create the list of weighted edges
-    aggregated_edges = {}
-
-    for edge in edges:
-        if not edge in aggregated_edges:
-            aggregated_edges[edge] = 1
-        else:
-            aggregated_edges[edge] += 1
-
-    return nodes, aggregated_edges
+    # save the graph into dot format
+    A = nx.nx_agraph.to_agraph(graph)
+    A.layout(prog='dot')
+    A.draw('{}-graph/{}.dot'.format(dataset, trace.base_id))
