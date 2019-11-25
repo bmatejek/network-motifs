@@ -1,3 +1,4 @@
+import glob
 import json
 
 
@@ -5,6 +6,7 @@ import pandas as pd
 
 
 from network_motifs.data_structures.open_stack import OpenStackTrace, OpenStackNode, OpenStackEdge
+from network_motifs.data_structures.xtrace import XTrace, XTraceNode, XTraceEdge
 
 
 
@@ -19,16 +21,40 @@ def VerifyKeys(data, keys):
 
 
 def ReadOpenStackTrainingFilenames():
-    training_list_filename = 'openstack-json/training-open-stack-traces.txt'
+    training_list_filename = 'openstack-json/training-openstack-traces.txt'
     with open(training_list_filename, 'r') as fd:
         return fd.read().splitlines()
 
 
 
 def ReadOpenStackTestingFilenames():
-    testing_list_filename = 'openstack-json/testing-open-stack-traces.txt'
+    testing_list_filename = 'openstack-json/testing-openstack-traces.txt'
     with open(testing_list_filename, 'r') as fd:
         return fd.read().splitlines()
+
+
+
+def ReadOpenStackFilenames():
+    return glob.glob('openstack-json/*json')
+
+
+
+def ReadXTraceTrainingFilenames():
+    training_list_filename = 'xtraces-json/training-xtraces-traces.txt'
+    with open(training_list_filename, 'r') as fd:
+        return fd.read().splitlines()
+
+
+
+def ReadXTraceTestingFilenames():
+    testing_list_filename = 'xtraces-json/testing-xtraces-traces.txt'
+    with open(testing_list_filename, 'r') as fd:
+        return fd.read().splitlines()
+
+
+
+def ReadXTraceFilenames():
+    return glob.glob('xtraces-json/*json')
 
 
 
@@ -75,7 +101,7 @@ def ReadOpenStackJSONTrace(json_filename):
         # the unique identifier for this node
         trace_id = json_node['span']['trace_id']
         # the parent that led to this node
-        parent_id = json_node['span']['parent_id']
+        parent_ids = [json_node['span']['parent_id']]
         # the actual function that is envoked
         tracepoint_id = json_node['span']['tracepoint_id']
         # the time of this particular action
@@ -83,7 +109,7 @@ def ReadOpenStackJSONTrace(json_filename):
         # the action associated with this node (entry, exit, or annotation)
         variant = json_node['span']['variant']
 
-        nodes.append(OpenStackNode(trace_id, parent_id, tracepoint_id, timestamp, variant))
+        nodes.append(OpenStackNode(trace_id, parent_ids, tracepoint_id, timestamp, variant))
 
     for json_edge in json_edges:
         # get the source and destination nodes
@@ -101,7 +127,7 @@ def ReadOpenStackJSONTrace(json_filename):
         # the action associated with this node
         variant = json_edge[2]['variant']
 
-        edges.append(OpenStackEdge(nodes, source, destination, duration, variant))
+        edges.append(OpenStackEdge(nodes[source], nodes[destination], duration, variant))
 
     # create the new json trace object
     return OpenStackTrace(nodes, edges, request_type, base_id)
@@ -124,23 +150,66 @@ def ReadXTraceJSONTrace(json_filename):
     reports = data['reports']
     nnodes = len(reports)
 
+    # keep track of all of the tags in this stack
+    tags = set()
+
+    # everything should have a source accept for a couple labels
+    sourceless_labels = ['Executing command', 'netread']
+
+    nodes = []                          # list of XTraceNodes
+    edge_list = []                      # directed edges in ids
+    id_to_node = {}                     # go from id to node
+
     # go through each function in the report
     for report in reports:
         # get the event and parent id
         event_id = report['EventID']
-        parent_id = report['ParentEventID']
+        parent_ids = report['ParentEventID']
+        # remove the buffer variable for process starts
+        if '0' in parent_ids: parent_ids.remove('0')
 
-        # get the time of this action
-        timestamp = pd.to_datetime(report['Timestamp'])
+        # get the tag for this entry in the report
+        if 'Tag' in report and not report['Tag'][0] == 'FsShell':
+            assert (len(report['Tag']) == 1)
+            tags.add(report['Tag'][0])
 
-        if not 'Source' in report:
-            print (report)
+        # get the source or label for this node in the report
+        if 'Source' in report:
+            label = report['Label']
+            assert (not label in sourceless_labels)
+            source = report['Source']
         else:
-            print (report['Source'])
-            print (parent_id)
+            label = report['Label']
+            assert (label in sourceless_labels)
+            source = report['Label']
 
-        label = report['Label']
+        # get the timestamp for this event
+        timestamp = report['Timestamp']
 
+        # create the node and save a reference to it
+        node = XTraceNode(event_id, parent_ids, source, timestamp)
+        id_to_node[event_id] = node
 
+        nodes.append(node)
 
-    exit()
+        # add all of the relevant edges
+        for parent_id in parent_ids:
+            edge_list.append((parent_id, event_id))
+
+    # convert the edge list into TraceEdges to construct a Trace object
+    edges = []
+    for edge in edge_list:
+        parent_node = id_to_node[edge[0]]
+        child_node = id_to_node[edge[1]]
+
+        duration = child_node.timestamp - parent_node.timestamp
+
+        edges.append(XTraceEdge(parent_node, child_node, duration))
+
+    # make sure there is only one tag per trace
+    assert (len(tags) == 1)
+    request = list(tags)[0]
+    request_type = request.split(' ')[0].strip('-')
+
+    # create the new json trace object
+    return XTrace(nodes, edges, request_type, request, base_id)

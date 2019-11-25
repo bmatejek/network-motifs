@@ -6,7 +6,7 @@ from network_motifs.data_structures.graph import Node
 
 
 def ConvertJSON2DAGGraph(json_nodes, json_edges):
-    # get a list of all functions 
+    # get a list of all functions
     function_set = set()
     functions = []
 
@@ -47,7 +47,7 @@ def ConvertJSON2DAGGraph(json_nodes, json_edges):
 
             # update the current node that we are at
             current_node_index = functions_to_nodes[json_node.function]
-            
+
             # add this function to the stack
             function_stack.append(json_node.function)
 
@@ -55,7 +55,7 @@ def ConvertJSON2DAGGraph(json_nodes, json_edges):
             json_node_index += 1
         # if you are entering a new function the current node called this one
         elif json_node.variance == 'Entry':
-            # what is the new node index 
+            # what is the new node index
             next_node_index = functions_to_nodes[json_node.function]
 
             # there is an edge from the previous node to this one
@@ -67,7 +67,7 @@ def ConvertJSON2DAGGraph(json_nodes, json_edges):
             # add this function to the stack
             function_stack.append(json_node.function)
 
-            # increment the json node index 
+            # increment the json node index
             json_node_index += 1
         # otherwise we are returning to the previous function on the stack
         else:
@@ -109,7 +109,7 @@ def ConvertJSON2DAGGraph(json_nodes, json_edges):
 
 
 def ConvertJSON2StackGraph(json_nodes, json_edges):
-    # get a list of all functions 
+    # get a list of all functions
     function_set = set()
     functions = []
 
@@ -150,7 +150,7 @@ def ConvertJSON2StackGraph(json_nodes, json_edges):
 
             # update the current node that we are at
             current_node_index = functions_to_nodes[json_node.function]
-            
+
             # add this function to the stack
             function_stack.append(json_node.function)
 
@@ -158,7 +158,7 @@ def ConvertJSON2StackGraph(json_nodes, json_edges):
             json_node_index += 1
         # if you are entering a new function the current node called this one
         elif json_node.variance == 'Entry':
-            # what is the new node index 
+            # what is the new node index
             next_node_index = functions_to_nodes[json_node.function]
 
             # there is an edge from the previous node to this one
@@ -170,7 +170,7 @@ def ConvertJSON2StackGraph(json_nodes, json_edges):
             # add this function to the stack
             function_stack.append(json_node.function)
 
-            # increment the json node index 
+            # increment the json node index
             json_node_index += 1
         # otherwise we are returning to the previous function on the stack
         else:
@@ -215,7 +215,7 @@ def ConvertJSON2StackGraph(json_nodes, json_edges):
 
 
 def ConvertJSON2Graph(json_nodes, json_edges):
-    # get a list of all functions 
+    # get a list of all functions
     function_set = set()
     functions = []
 
@@ -256,7 +256,7 @@ def ConvertJSON2Graph(json_nodes, json_edges):
 
             # update the current node that we are at
             current_node_index = functions_to_nodes[json_node.function]
-            
+
             # add this function to the stack
             function_stack.append(json_node.function)
 
@@ -264,7 +264,7 @@ def ConvertJSON2Graph(json_nodes, json_edges):
             json_node_index += 1
         # if you are entering a new function the current node called this one
         elif json_node.variance == 'Entry':
-            # what is the new node index 
+            # what is the new node index
             next_node_index = functions_to_nodes[json_node.function]
 
             # there is an edge from the previous node to this one
@@ -276,7 +276,7 @@ def ConvertJSON2Graph(json_nodes, json_edges):
             # add this function to the stack
             function_stack.append(json_node.function)
 
-            # increment the json node index 
+            # increment the json node index
             json_node_index += 1
         # otherwise we are returning to the previous function on the stack
         else:
