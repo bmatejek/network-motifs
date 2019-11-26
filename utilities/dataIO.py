@@ -1,8 +1,9 @@
 import glob
-import json
+import struct
 
 
 import pandas as pd
+
 
 
 from network_motifs.data_structures.open_stack import OpenStackTrace, OpenStackNode, OpenStackEdge
@@ -10,206 +11,136 @@ from network_motifs.data_structures.xtrace import XTrace, XTraceNode, XTraceEdge
 
 
 
-def VerifyKeys(data, keys):
-    # make sure every trace has these keys
-    for key, value in data.items():
-        assert (key in keys)
-        keys.remove(key)
 
-    assert (not len(keys))
-
-
-
-def ReadOpenStackTrainingFilenames():
-    training_list_filename = 'openstack-json/training-openstack-traces.txt'
+def ReadTrainingFilenames(dataset):
+    training_list_filename = 'traces/{}/training-traces.txt'.format(dataset)
     with open(training_list_filename, 'r') as fd:
         return fd.read().splitlines()
 
 
 
-def ReadOpenStackTestingFilenames():
-    testing_list_filename = 'openstack-json/testing-openstack-traces.txt'
+def ReadTestingFilenames(dataset):
+    testing_list_filename = 'traces/{}/testing-traces.txt'.format(dataset)
     with open(testing_list_filename, 'r') as fd:
         return fd.read().splitlines()
 
 
 
-def ReadOpenStackFilenames():
-    return glob.glob('openstack-json/*json')
+def ReadFilenames(dataset):
+    return glob.glob('traces/{}/*trace'.format(dataset))
 
 
 
-def ReadXTraceTrainingFilenames():
-    training_list_filename = 'xtraces-json/training-xtraces-traces.txt'
-    with open(training_list_filename, 'r') as fd:
-        return fd.read().splitlines()
+def ReadTrace(dataset, trace_filename):
+    if dataset == 'openstack': return ReadOpenStackTrace(trace_filename)
+    elif dataset == 'xtrace': return ReadXTrace(trace_filename)
+    else: assert (False)
 
 
 
-def ReadXTraceTestingFilenames():
-    testing_list_filename = 'xtraces-json/testing-xtraces-traces.txt'
-    with open(testing_list_filename, 'r') as fd:
-        return fd.read().splitlines()
+def ReadOpenStackTrace(trace_filename):
+    # maximum size for strings
+    max_bytes = 48
+    max_function_bytes = 196
+
+    # open the file
+    with open(trace_filename, 'rb') as fd:
+        # create the list of nodes and edges
+        nodes = []
+        edges = []
+
+        # read the request type for this trace
+        request_type_bytes, = struct.unpack('%ds' % max_bytes, fd.read(max_bytes))
+        request_type = request_type_bytes.decode().strip('\0')
+        # read the base id for this trace
+        base_id_bytes, = struct.unpack('%ds' % max_bytes, fd.read(max_bytes))
+        base_id = base_id_bytes.decode().strip('\0')
+        # read the nodes and edges
+        nnodes, nedges, = struct.unpack('ii', fd.read(8))
+        # read all of the nodes
+        for iv in range(nnodes):
+            node_id_bytes, = struct.unpack('%ds' % max_bytes, fd.read(max_bytes))
+            node_id = node_id_bytes.decode().strip('\0')
+            # read the function id for this node
+            function_id_bytes, = struct.unpack('%ds' % max_function_bytes, fd.read(max_function_bytes))
+            function_id = function_id_bytes.decode().strip('\0')
+            # read the timestamp
+            timestamp, = struct.unpack('q', fd.read(8))
+            # read the variant
+            variant_bytes, = struct.unpack('%ds' % max_bytes, fd.read(max_bytes))
+            variant = variant_bytes.decode().strip('\0')
+
+            # create this node after reading all attributes
+            node = OpenStackNode(node_id, function_id, timestamp, variant)
+            nodes.append(node)
+
+        for ie in range(nedges):
+            # get the source and destination indices
+            source_index, destination_index, = struct.unpack('ii', fd.read(8))
+            # read the duration of the edge
+            duration, = struct.unpack('q', fd.read(8))
+            variant_bytes, = struct.unpack('%ds' % max_bytes, fd.read(max_bytes))
+            # read the variant
+            variant = variant_bytes.decode().strip('\0')
+
+            # create this edge after reading all attributes
+            edge = OpenStackEdge(nodes[source_index], nodes[destination_index], duration, variant)
+            edges.append(edge)
+
+        # create new trace object and return
+        trace = OpenStackTrace(nodes, edges, request_type, base_id)
+
+        return trace
 
 
 
-def ReadXTraceFilenames():
-    return glob.glob('xtraces-json/*json')
+def ReadXTrace(trace_filename):
+    # maximum size for strings
+    max_bytes = 32
+    max_function_bytes = 64
 
+    # open the file
+    with open(trace_filename, 'rb') as fd:
+        # create the list of nodes and edges
+        nodes = []
+        edges = []
 
+        # read the request type for this trace
+        request_type_bytes, = struct.unpack('%ds' % max_bytes, fd.read(max_bytes))
+        request_type = request_type_bytes.decode().strip('\0')
+        # read the request  for this trace
+        request_bytes, = struct.unpack('%ds' % max_function_bytes, fd.read(max_function_bytes))
+        request = request_bytes.decode().strip('\0')
+        # read the base id for this trace
+        base_id_bytes, = struct.unpack('%ds' % max_bytes, fd.read(max_bytes))
+        base_id = base_id_bytes.decode().strip('\0')
+        # read the nodes and edges
+        nnodes, nedges, = struct.unpack('ii', fd.read(8))
+        # read all of the nodes
+        for iv in range(nnodes):
+            node_id_bytes, = struct.unpack('%ds' % max_bytes, fd.read(max_bytes))
+            node_id = node_id_bytes.decode().strip('\0')
+            # read the function id for this node
+            function_id_bytes, = struct.unpack('%ds' % max_function_bytes, fd.read(max_function_bytes))
+            function_id = function_id_bytes.decode().strip('\0')
+            # read the timestamp
+            timestamp, = struct.unpack('q', fd.read(8))
 
-def ReadOpenStackJSONTrace(json_filename):
-    # open the JSON file
-    with open(json_filename, 'r') as fd:
-        data = json.load(fd)
+            # create this node after reading all attributes
+            node = XTraceNode(node_id, function_id, timestamp)
+            nodes.append(node)
 
-    # verify the json file follows the expected format
-    VerifyKeys(data, ['g', 'base_id', 'start_node', 'end_node', 'request_type'])
+        for ie in range(nedges):
+            # get the source and destination indices
+            source_index, destination_index, = struct.unpack('ii', fd.read(8))
+            # read the duration of the edge
+            duration, = struct.unpack('q', fd.read(8))
 
-    # read the entire graph structure
-    graph = data['g']
-    # verify the json file has the expected graph format
-    VerifyKeys(graph, ['nodes', 'node_holes', 'edge_property', 'edges'])
+            # create this edge after reading all attributes
+            edge = XTraceEdge(nodes[source_index], nodes[destination_index], duration)
+            edges.append(edge)
 
-    # read the base id for this trace
-    base_id = data['base_id']
-    assert (base_id in json_filename)
+        # create new trace object and return
+        trace = XTrace(nodes, edges, request_type, request, base_id)
 
-    # read the start and end nodes for this trace
-    start_node = data['start_node']
-    end_node = data['end_node']
-
-    # read the request type for this trace
-    request_type = data['request_type']
-
-    # read all nodes and edges from the graph
-    json_nodes = graph['nodes']
-    json_edges = graph['edges']
-
-    # create new lists for the internal format
-    nodes = []
-    edges = []
-
-    # cannot handle node holes at the moment
-    assert (not len(graph['node_holes']))
-
-    # only care about directed graphs
-    assert (graph['edge_property'] == 'directed')
-
-    # create a new graph structure for each trace
-    for json_node in json_nodes:
-        # the unique identifier for this node
-        trace_id = json_node['span']['trace_id']
-        # the parent that led to this node
-        parent_ids = [json_node['span']['parent_id']]
-        # the actual function that is envoked
-        tracepoint_id = json_node['span']['tracepoint_id']
-        # the time of this particular action
-        timestamp = pd.to_datetime(json_node['span']['timestamp'])
-        # the action associated with this node (entry, exit, or annotation)
-        variant = json_node['span']['variant']
-
-        nodes.append(OpenStackNode(trace_id, parent_ids, tracepoint_id, timestamp, variant))
-
-    for json_edge in json_edges:
-        # get the source and destination nodes
-        source = json_edge[0]
-        destination = json_edge[1]
-
-        # get the time for this edge
-        seconds = json_edge[2]['duration']['secs']
-        nanoseconds = json_edge[2]['duration']['nanos']
-        duration = seconds * 10 ** 9 + nanoseconds
-
-        # make sure that the edge takes a non trivial amount of time
-        assert (not duration == 1)
-
-        # the action associated with this node
-        variant = json_edge[2]['variant']
-
-        edges.append(OpenStackEdge(nodes[source], nodes[destination], duration, variant))
-
-    # create the new json trace object
-    return OpenStackTrace(nodes, edges, request_type, base_id)
-
-
-
-def ReadXTraceJSONTrace(json_filename):
-    # open the JSON file
-    with open(json_filename, 'r') as fd:
-        data = json.load(fd)
-
-    # verify the json file follows the expected format
-    VerifyKeys(data, ['id', 'reports'])
-
-    # read the base id for this trace
-    base_id = data['id']
-    assert (base_id in json_filename)
-
-    # read in the data from the reports
-    reports = data['reports']
-    nnodes = len(reports)
-
-    # keep track of all of the tags in this stack
-    tags = set()
-
-    # everything should have a source accept for a couple labels
-    sourceless_labels = ['Executing command', 'netread']
-
-    nodes = []                          # list of XTraceNodes
-    edge_list = []                      # directed edges in ids
-    id_to_node = {}                     # go from id to node
-
-    # go through each function in the report
-    for report in reports:
-        # get the event and parent id
-        event_id = report['EventID']
-        parent_ids = report['ParentEventID']
-        # remove the buffer variable for process starts
-        if '0' in parent_ids: parent_ids.remove('0')
-
-        # get the tag for this entry in the report
-        if 'Tag' in report and not report['Tag'][0] == 'FsShell':
-            assert (len(report['Tag']) == 1)
-            tags.add(report['Tag'][0])
-
-        # get the source or label for this node in the report
-        if 'Source' in report:
-            label = report['Label']
-            assert (not label in sourceless_labels)
-            source = report['Source']
-        else:
-            label = report['Label']
-            assert (label in sourceless_labels)
-            source = report['Label']
-
-        # get the timestamp for this event
-        timestamp = report['Timestamp']
-
-        # create the node and save a reference to it
-        node = XTraceNode(event_id, parent_ids, source, timestamp)
-        id_to_node[event_id] = node
-
-        nodes.append(node)
-
-        # add all of the relevant edges
-        for parent_id in parent_ids:
-            edge_list.append((parent_id, event_id))
-
-    # convert the edge list into TraceEdges to construct a Trace object
-    edges = []
-    for edge in edge_list:
-        parent_node = id_to_node[edge[0]]
-        child_node = id_to_node[edge[1]]
-
-        duration = child_node.timestamp - parent_node.timestamp
-
-        edges.append(XTraceEdge(parent_node, child_node, duration))
-
-    # make sure there is only one tag per trace
-    assert (len(tags) == 1)
-    request = list(tags)[0]
-    request_type = request.split(' ')[0].strip('-')
-
-    # create the new json trace object
-    return XTrace(nodes, edges, request_type, request, base_id)
+        return trace
