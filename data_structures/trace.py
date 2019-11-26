@@ -11,8 +11,12 @@ class Trace(object):
             self.node_to_index[node] = iv
 
         # need this separately since ordering of nodes can change
-        for edge in edges:
-            edge.source.parent_nodes.append(edge.destination)
+        for edge in self.edges:
+            edge.destination.parent_nodes.append(edge.source)
+
+        # sort the parent nodes so the most recent parent is first
+        for node in self.nodes:
+            node.parent_nodes.sort(key=lambda x: x.timestamp, reverse=True)
 
     def Filename(self):
         # this method needs to be overridden by inherited classes

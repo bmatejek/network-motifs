@@ -178,6 +178,7 @@ def ReadXTraceJSONTrace(json_filename):
         child_node = id_to_node[edge[1]]
 
         duration = child_node.timestamp - parent_node.timestamp
+        assert (duration >= 0)
 
         edges.append(XTraceEdge(parent_node, child_node, duration))
 
