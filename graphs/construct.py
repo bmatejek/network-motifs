@@ -18,7 +18,7 @@ def OriginalGraph(dataset, trace):
     # save the graph into dot format
     A = nx.nx_agraph.to_agraph(graph)
     A.layout(prog='dot')
-    A.draw('{}-dot/{}.dot'.format(dataset, trace.base_id))
+    A.draw('dots/{}/{}.dot'.format(dataset, trace.base_id))
 
 
 
@@ -49,4 +49,4 @@ def StackedGraph(dataset, trace):
     # save the graph into dot format
     A = nx.nx_agraph.to_agraph(graph)
     A.layout(prog='dot')
-    A.draw('{}-graph/{}.dot'.format(dataset, trace.base_id))
+    A.draw('graphs/{}/{}.dot'.format(dataset, trace.base_id))
