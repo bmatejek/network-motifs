@@ -2,11 +2,6 @@ import random
 
 
 
-# variable to control the maximum order of markov chains
-max_order = 15
-
-
-
 def ToOrdinal(value):
     if value % 100//10 != 1:
         if value % 10 == 1:
@@ -49,7 +44,7 @@ def GenerateTransitionMatrix(counts):
 
 
 
-def TrainMarkovChain(training_traces):
+def TrainMarkovChain(training_traces, max_order):
     # next estimates are aggregated over all training_traces
     counts = {}
 
@@ -58,7 +53,7 @@ def TrainMarkovChain(training_traces):
         # go through all of the nodes
         for node in trace.nodes:
             # skip nodes that are the first envoked
-            if node.id == trace.base_id: continue
+            if not trace.node_to_index[node]: continue
 
             # get the action associated with this node
             node_action = node.Name()
@@ -95,18 +90,22 @@ def TrainMarkovChain(training_traces):
 
 
 
-def TestMarkovChain(traces, transitions, dataset, print_verbose=False):
+def TestMarkovChain(traces, transitions, dataset, max_order, print_verbose=False):
     # create counts for the correct/incorrect for each order markov chain
     ncorrect_transitions = [0 for _ in range(max_order)]
     nincorrect_transitions = [0 for _ in range(max_order)]
     nincomplete_information = [0 for _ in range(max_order)]
+
+    # make sure all the keys are less than the order size
+    for key in transitions:
+        assert (len(key) <= max_order)
 
     # go through each testing trace
     for trace in traces:
         # go through all of the nodes
         for node in trace.nodes:
             # skip nodes that are the first envoked
-            if node.id == trace.base_id: continue
+            if not trace.node_to_index[node]: continue
 
             # get the action associated with this node
             ground_truth_action = node.Name()
@@ -125,7 +124,13 @@ def TestMarkovChain(traces, transitions, dataset, print_verbose=False):
                 if ancestor_node == None:
                     if previous_result == 0: nincorrect_transitions[order] += 1
                     elif previous_result == 1: ncorrect_transitions[order] += 1
-                    elif previous_result == 2: nincomplete_information[order] += 1
+                    elif previous_result == 2:
+                        nincomplete_information[order] += 1
+                        if order == 0:
+                            print (node.id)
+                            print (trace.base_id)
+                            print (trace.node_to_index[node])
+                            print ('Here')
                     else: assert (False)
 
                     # continue to the next order
@@ -145,13 +150,19 @@ def TestMarkovChain(traces, transitions, dataset, print_verbose=False):
                     # continue to the next order
                     continue
 
-                selected_action = random.random()
+                #selected_action = random.random()
+                max_probability = 0.0
+                selected_action = -1
+
 
                 for (probability, action) in transitions[key]:
-                    if probability < selected_action:
-                        break
+                    if probability > max_probability:
+                        max_probability = probability
+                        selected_action = action
+                    #if probability < selected_action:
+                    #    break
 
-                if action == ground_truth_action:
+                if selected_action == ground_truth_action:
                     previous_result = 1
                     ncorrect_transitions[order] += 1
                 else:

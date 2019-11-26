@@ -7,7 +7,7 @@ plt.rc({'fontname', 'Ubuntu'})
 
 
 
-def VisualizeAccuracyCurves(trace_source, training_accuracies, testing_accuracies):
+def VisualizeAccuracyCurves(trace_source,  accuracies):
     plt.figure()
 
     title = '{} Markov Chain Results'.format(trace_source)
@@ -16,16 +16,14 @@ def VisualizeAccuracyCurves(trace_source, training_accuracies, testing_accuracie
     plt.ylabel('Accuracy', fontsize=14)
 
     # create the axis for orders
-    assert (len(training_accuracies) == len(testing_accuracies))
-    orders = [iv + 1 for iv in range(len(training_accuracies))]
+    orders = [iv + 1 for iv in range(len(accuracies))]
 
     # set axis information
     ax = plt.axes()
     ax.set_xlim(1, orders[-1])
     ax.set_ylim(0, 100)
 
-    plt.plot(orders, training_accuracies, label='Training Data')
-    plt.plot(orders, testing_accuracies, label='Testing Data', marker='x')
+    plt.plot(orders, accuracies, label='Testing Data', marker='x')
 
     plt.legend()
 
