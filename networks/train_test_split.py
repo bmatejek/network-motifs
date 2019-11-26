@@ -27,12 +27,12 @@ def SplitTraces(dataset, traces, request_types):
         testing_traces = traces[split_index:]
 
         for trace in training_traces:
-            trace_filename = '{}-json/{}.json'.format(dataset, trace.base_id)
+            trace_filename = 'traces/{}/{}.trace'.format(dataset, trace.base_id)
             assert (os.path.exists(trace_filename))
             training_filenames.append(trace_filename)
 
         for trace in testing_traces:
-            trace_filename = '{}-json/{}.json'.format(dataset, trace.base_id)
+            trace_filename = 'traces/{}/{}.trace'.format(dataset, trace.base_id)
             assert (os.path.exists(trace_filename))
             testing_filenames.append(trace_filename)
 
@@ -40,12 +40,12 @@ def SplitTraces(dataset, traces, request_types):
     assert (set(training_filenames).isdisjoint(set(testing_filenames)))
 
     # write the two files
-    training_list_filename = '{}-json/training-{}-traces.txt'.format(dataset, dataset)
+    training_list_filename = 'traces/{}/training-traces.txt'.format(dataset)
     with open(training_list_filename, 'w') as fd:
         for training_filename in training_filenames:
             fd.write('{}\n'.format(training_filename))
 
-    testing_list_filename = '{}-json/testing-{}-traces.txt'.format(dataset, dataset)
+    testing_list_filename = 'traces/{}/testing-traces.txt'.format(dataset)
     with open(testing_list_filename, 'w') as fd:
         for testing_filename in testing_filenames:
             fd.write('{}\n'.format(testing_filename))
