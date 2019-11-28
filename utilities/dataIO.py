@@ -2,9 +2,6 @@ import glob
 import struct
 
 
-import pandas as pd
-
-
 
 from network_motifs.data_structures.open_stack import OpenStackTrace, OpenStackNode, OpenStackEdge
 from network_motifs.data_structures.xtrace import XTrace, XTraceNode, XTraceEdge
