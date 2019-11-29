@@ -26,9 +26,21 @@ class Trace(object):
         assert (len(self.ordered_nodes[0].parent_nodes) == 0)
 
         # get the total running time for this trace
-        self.maximum_timestamp = self.ordered_nodes[-1].timestamp
         self.duration = self.ordered_nodes[-1].timestamp - self.ordered_nodes[0].timestamp
         assert (self.duration > 0)
+
+        # get the extreme values for the timestamps
+        self.minimum_timestamp = self.ordered_nodes[0].timestamp
+        self.maximum_timestamp = self.ordered_nodes[-1].timestamp
+
+        # update the timestamps so that the root node is at time 0
+        for node in self.nodes:
+            node.timestamp = node.timestamp - self.minimum_timestamp
+            assert (node.timestamp >= 0)
+
+        # update the extreme values in the new frame
+        self.minimum_timestamp = self.ordered_nodes[0].timestamp
+        self.maximum_timestamp = self.ordered_nodes[-1].timestamp
 
 
     def Filename(self):
