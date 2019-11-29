@@ -40,11 +40,20 @@ def StackedGraph(dataset, trace):
         graph.add_node(index, label=node_name)
         node_name_to_index[node_name] = index
 
+    edge_list = {}
     for edge in edges:
         source_index = node_name_to_index[edge.source.Name()]
         destination_index = node_name_to_index[edge.destination.Name()]
 
-        graph.add_edge(source_index, destination_index)
+        if not (source_index, destination_index) in edge_list:
+            edge_list[(source_index, destination_index)] = 1
+        else:
+            edge_list[(source_index, destination_index)] += 1
+
+    for (source_index, destination_index) in edge_list:
+        weight = edge_list[source_index, destination_index]
+
+        graph.add_edge(source_index, destination_index, label=weight)
 
     # save the graph into dot format
     A = nx.nx_agraph.to_agraph(graph)
