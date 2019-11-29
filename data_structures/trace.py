@@ -1,7 +1,3 @@
-import heapq
-
-
-
 class Trace(object):
     def __init__(self, nodes, edges, request_type, base_id):
         self.nodes = nodes
@@ -9,13 +5,16 @@ class Trace(object):
         self.request_type = request_type
         self.base_id = base_id
         self.node_to_index = {}
+
         # order the nodes by timestamp
         self.ordered_nodes = []
+        print (self.base_id)
 
         # populate the helper dictionaries
         for iv, node in enumerate(nodes):
             self.node_to_index[node] = iv
             node.index = iv
+            node.rank = -1
 
         # need this separately since ordering of nodes can change
         for edge in self.edges:
@@ -25,52 +24,11 @@ class Trace(object):
         # make sure that the first node is the start of the chain
         assert (len(self.nodes[0].parent_nodes) == 0)
 
-        # run Dijkstra's algorithm to get the rank of each node
-        nnodes = len(self.nodes)
-        visited = [False for _ in range(nnodes)]
-        popped = [False for _ in range(nnodes)]
-        ranks = [2 * nnodes for _ in range(nnodes)]
-        heap = []
-
-        # the first node has rank 0 and is visited
-        ranks[0] = 0
-        visited[0] = True
-        # the rank of the node, the dummy counter variable for every push
-        # and the index for the node
-        heap.append((ranks[0], 0, 0))
-        # dummy counter variable
-        counter = 1
-
-        while (len(heap)):
-            # pop the element closest to the root
-            rank, _, index = heapq.heappop(heap)
-            # skip if already seen
-            if popped[index]: continue
-
-            # so not to revisit this node
-            popped[index] = True
-
-            for neighbor_node in (self.nodes[index].parent_nodes + self.nodes[index].children_nodes):
-                if (not visited[neighbor_node.index]):
-                    ranks[neighbor_node.index] = rank + 1
-                    visited[neighbor_node.index] = True
-                    heapq.heappush(heap, (ranks[neighbor_node.index], counter, neighbor_node.index))
-                    counter += 1
-                elif rank + 1 < ranks[neighbor_node.index]:
-                    ranks[neighbor_node.index] = rank + 1
-                    heapq.heappush(heap, (ranks[neighbor_node.index], counter, neighbor_node.index))
-                    counter += 1
-
-        # update the attributes for this node
-        for node in self.nodes:
-            node.rank = ranks[node.index]
-            assert (visited[node.index] == True)
-            assert (popped[node.index] == True)
-
-        # get a list of the nodes ordered by timestamp
         self.ordered_nodes = sorted(self.nodes, key=lambda x: (x.timestamp, x.rank, x.function_id))
 
-
+        # get the total running time for this trace
+        self.duration = self.ordered_nodes[-1].timestamp - self.ordered_nodes[0].timestamp
+        assert (self.duration > 0)
 
     def Filename(self):
         # this method needs to be overridden by inherited classes
@@ -87,6 +45,13 @@ class Trace(object):
     def WriteToFile(self):
         # this method needs to be overridden by inherited classes
         assert (False)
+
+    def KthNode(self, k):
+        # ignore out of range nodes
+        if k < 0: return None
+        if k >= len(self.nodes): return None
+        # return the nodes at this location
+        return self.ordered_nodes[k]
 
 
 
@@ -106,13 +71,6 @@ class TraceNode(object):
         # this needs to be overridden by inherited classes
         assert (False)
 
-    def ParentNode(self):
-        # return the first parent node
-        if not len(self.parent_nodes): return None
-        else: return self.parent_nodes[0]
-
-
-
 
 
 class TraceEdge(object):
@@ -120,3 +78,23 @@ class TraceEdge(object):
         self.source = source
         self.destination = destination
         self.duration = duration
+
+
+
+def GetUniqueFunctions(traces):
+    functions = set()
+
+    for trace in traces:
+        functions = functions | trace.UniqueFunctions()
+
+    return functions
+
+
+
+def GetUniqueRequestTypes(traces):
+    request_types = set()
+
+    for trace in traces:
+        request_types.add(trace.request_type)
+
+    return request_types

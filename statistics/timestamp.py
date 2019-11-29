@@ -6,35 +6,35 @@ plt.rc({'fontname', 'Ubuntu'})
 
 
 
-from network_motifs.data_structures import open_stack
+from network_motifs.data_structures.trace import GetUniqueFunctions, GetUniqueRequestTypes
+from network_motifs.utilities.constants import *
 
 
 
-def VisualizeDistribution(function, distribution, index):
-    # make the function name human readable
-    split_funciton_name = function.split(':')
-
-    if len(split_funciton_name) == 2:
-        function_title = function
+def VisualizeDistribution(dataset, distribution, title, filename):
+    # determine the appropriate units for this distribution
+    max_duration = max(distribution)
+    if max_duration > 10**8:
+        units = 'seconds'
+        for iv in range(len(distribution)):
+            distribution[iv] = distribution[iv] / 10**9
     else:
-        function_title = '{}:{}\n{}'.format(split_funciton_name[0], split_funciton_name[1], split_funciton_name[2])
+        units = 'nanoseconds'
 
-    plt.figure()
+    # plot the figure
+    plt.figure(figsize=(8, 4))
 
-    plt.title(function_title, pad=20)
-    plt.ylabel('Time (nanoseconds)')
+    # write the labels for this set of functions
+    plt.title(title, pad=20, fontsize=14)
+    plt.ylabel('Time ({})'.format(units), fontsize=12)
+    plt.xlabel('No. Appearances: {}'.format(len(distribution)), fontsize=12)
 
     # plot the distribution
     plt.boxplot(distribution)
 
-    # remove the xaxis
-    ax = plt.axes()
-    xax = ax.axes.get_xaxis()
-    xax.set_visible(False)
-
     plt.tight_layout()
 
-    output_filename = 'openstack-distributions/{:04d}-{:04d}.png'.format(len(distribution), index)
+    output_filename = 'distributions/{}/{}'.format(dataset, filename)
     plt.savefig(output_filename)
 
     # clear and close this figure
@@ -43,8 +43,11 @@ def VisualizeDistribution(function, distribution, index):
 
 
 
-def Distribution(traces):
-    trace_functions = open_stack.GetUniqueFunctions(traces)
+def FunctionDistribution(dataset, traces):
+    # not implemented for xtrace
+    assert (not dataset == 'xtrace')
+
+    trace_functions = GetUniqueFunctions(traces)
 
     # begin to keep track of the distributions
     timestamp_distributions = {}
@@ -60,25 +63,65 @@ def Distribution(traces):
             # skip annotations
             if node.variant == 'Entry':
                 # make sure that the entry is not already in the dictionary
-                assert (not node.trace_id in entries)
+                assert (not node.id in entries)
                 # record the timestamp for entry
-                entries[node.trace_id] = node.timestamp
+                entries[node.id] = node.timestamp
             elif node.variant == 'Exit':
                 # make sure that an entry exists for this exit
-                assert (node.trace_id in entries)
+                assert (node.id in entries)
                 # determine the time from entry to exit in nanoseconds
-                duration = round((node.timestamp - entries[node.trace_id]).total_seconds() * 10 ** 9)
-                timestamp_distributions[node.tracepoint_id].append(duration)
+                duration = node.timestamp - entries[node.id]
+                timestamp_distributions[node.function_id].append(duration)
 
                 # remove this entry
-                entries.pop(node.trace_id)
+                entries.pop(node.id)
 
     # for each function plot the distribution
-    # need to sort so that each function saves to the same filename
     for iv, function in enumerate(sorted(trace_functions)):
         distribution = timestamp_distributions[function]
 
         # skip over annotation only functions
         if not len(distribution): continue
 
-        VisualizeDistribution(function, distribution, iv)
+        if dataset == 'openstack':
+            # make a human readable title from the function
+            split_function_name = function.split(':')
+            if len(split_function_name) == 2:
+                title = function
+            else:
+                title = '{}:{}\n{}'.format(split_function_name[0], split_function_name[1], split_function_name[2])
+        else:
+            title = '{} {}'.format(human_readable[dataset], function)
+
+        filename = 'function-{:04d}.png'.format(iv)
+
+        VisualizeDistribution(dataset, distribution, title, filename)
+
+
+
+def RequestTypesDistribution(dataset, traces):
+    trace_request_types = GetUniqueRequestTypes(traces)
+
+    # begin to keep track of the distributions
+    timestamp_distributions = {}
+    for request_type in trace_request_types:
+        timestamp_distributions[request_type] = []
+
+    for trace in traces:
+        # get the duration in seconds
+        timestamp_distributions[trace.request_type].append(trace.duration)
+
+    # for each request type, plot the distribution
+    for request_type in trace_request_types:
+        distribution = timestamp_distributions[request_type]
+
+        # skip over annotation only functions
+        if not len(distribution): continue
+
+        filename = 'request-type-{}.png'.format(request_type).lower()
+
+        # get the title for this distribution
+        title = '{}: {}'.format(human_readable[dataset], request_type)
+
+        # visiaulize the distribution
+        VisualizeDistribution(dataset, distribution, title, filename)

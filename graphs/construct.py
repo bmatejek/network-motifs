@@ -13,7 +13,7 @@ def OriginalGraph(dataset, trace):
         graph.add_node(index, label=node.Name())
 
     for edge in edges:
-        graph.add_edge(trace.node_to_index[edge.source], trace.node_to_index[edge.destination])
+        graph.add_edge(edge.source.index, edge.destination.index)
 
     # save the graph into dot format
     A = nx.nx_agraph.to_agraph(graph)

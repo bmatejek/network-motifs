@@ -3,6 +3,11 @@ import random
 
 
 def ToOrdinal(value):
+    """
+    Convert a numerical value into an ordinal number.
+    @param value: the number to be converted
+    """
+    
     if value % 100//10 != 1:
         if value % 10 == 1:
             ordval = '{}st'.format(value)
@@ -20,6 +25,11 @@ def ToOrdinal(value):
 
 
 def GenerateTransitionMatrix(counts):
+    """
+    Convert a countr matrix into a probability transition matrix.
+    @param counts: for each key, how many times is the future node seen
+    """
+
     transitions = {}
 
     for key in counts:
@@ -44,44 +54,48 @@ def GenerateTransitionMatrix(counts):
 
 
 
-def TrainMarkovChain(training_traces, max_order):
+def TrainMarkovChain(training_traces, max_order, k = 1):
+    """
+    Create Markov Chain model from the training traces.
+    @param training_traces: list of traces for model generation
+    @param max_order: the maximum number of nodes to look at in the past
+    @param k: the number of nodes in the future to predict
+    """
+
+    # parameter verification
+    assert (len(training_traces))
+    assert (max_order > 0)
+    assert (k > 0)
+
     # next estimates are aggregated over all training_traces
     counts = {}
 
     # train the Markov model
     for trace in training_traces:
-        # go through all of the nodes
-        for node in trace.nodes:
-            # skip nodes that are the first envoked
-            if not trace.node_to_index[node]: continue
+        # go through every node in the trace in timestamp order
+        nnodes = len(trace.nodes)
+        for iv in range(nnodes):
+            # what node in the future are we trying to predict
+            future_node = trace.KthNode(iv + k)
+            if future_node == None: continue
+            future_node = future_node.Name()
 
-            # get the action associated with this node
-            node_action = node.Name()
+            key = ()
+            # go through all orders sequentially
+            for io in range(max_order):
+                ancestor_node = trace.KthNode(iv - io)
+                if ancestor_node == None: continue
 
-            # continue until the ancestor no longer exists
-            ancestor_node = node.ParentNode()
+                key = (ancestor_node.Name(),) + key
 
-            key = ()            # keep a record of the keys for each loop iteration
-            order = 1           # restrict how many orders are allowed
-            while not ancestor_node == None:
-                ancestor_action = ancestor_node.Name()
-                key = (ancestor_action,) + key
-
-                # add this key to the list of transitions
+                # has this key been seen before?
                 if not key in counts:
                     counts[key] = {}
-                # add the target to the array of transitions
-                if not node_action in counts[key]:
-                    counts[key][node_action] = 1
+                # has  this future node been seen before?
+                if not future_node in counts[key]:
+                    counts[key][future_node] = 1
                 else:
-                    counts[key][node_action] += 1
-
-                # update to the parent of the current ancestor
-                ancestor_node = ancestor_node.ParentNode()
-
-                # sensible restrictions to the maximum value of the chain
-                if order == max_order: break
-                order += 1
+                    counts[key][future_node] += 1
 
     # convert the counts from above to transitions from a given key
     transitions = GenerateTransitionMatrix(counts)
@@ -90,7 +104,16 @@ def TrainMarkovChain(training_traces, max_order):
 
 
 
-def TestMarkovChain(traces, transitions, dataset, max_order, print_verbose=False):
+def TestMarkovChain(traces, transitions, max_order, k = 1, print_verbose = False):
+    """
+    Predict future nodes based on max_order previous nodes.
+    @param traces: list of traces for prediction
+    @param transitions: set of transition probabilities from training iteration
+    @param max_order: the maximum number of nodes to look at in the past
+    @param k: the number of nodes in the future to predict
+    @param: print_verbose: print out the results for each node
+    """
+
     # create counts for the correct/incorrect for each order markov chain
     ncorrect_transitions = [0 for _ in range(max_order)]
     nincorrect_transitions = [0 for _ in range(max_order)]
@@ -102,75 +125,43 @@ def TestMarkovChain(traces, transitions, dataset, max_order, print_verbose=False
 
     # go through each testing trace
     for trace in traces:
-        # go through all of the nodes
-        for node in trace.nodes:
-            # skip nodes that are the first envoked
-            if not trace.node_to_index[node]: continue
+        # go through every node in the trace in timestamp order
+        nnodes = len(trace.nodes)
+        for iv in range(nnodes):
+            # what node in the future are we trying to predict
+            future_node = trace.KthNode(iv + k)
+            if future_node == None: continue
+            future_node = future_node.Name()
 
-            # get the action associated with this node
-            ground_truth_action = node.Name()
-
-            # start with the parent of this node
-            ancestor_node = node.ParentNode()
-
-            # keep track of the lower order result
-            # 0 is incorrect, 1 is correct, 2 is incomplete
+            # what was the result from the previous order
             previous_result = 2
 
-            # continue for all allowable orders
             key = ()
-            for order in range(max_order):
-                # do not continue down this chain, just use the previous result
-                if ancestor_node == None:
-                    if previous_result == 0: nincorrect_transitions[order] += 1
-                    elif previous_result == 1: ncorrect_transitions[order] += 1
-                    elif previous_result == 2:
-                        nincomplete_information[order] += 1
-                        if order == 0:
-                            print (node.id)
-                            print (trace.base_id)
-                            print (trace.node_to_index[node])
-                            print ('Here')
-                    else: assert (False)
+            # go through all orders sequentially
+            for io in range(max_order):
+                ancestor_node = trace.KthNode(iv - io)
+                # can no longer use
+                if not ancestor_node == None:
+                    key = (ancestor_node.Name(),) + key
 
-                    # continue to the next order
-                    continue
-
-                # get the action for this ancestor
-                ancestor_action = ancestor_node.Name()
-                key = (ancestor_action,) + key
-
-                # if this nevery happened before, use previous result
                 if not key in transitions:
-                    if previous_result == 0: nincorrect_transitions[order] += 1
-                    elif previous_result == 1: ncorrect_transitions[order] += 1
-                    elif previous_result == 2: nincomplete_information[order] += 1
-                    else: assert (False)
-
-                    # continue to the next order
+                    if previous_result == 0: nincorrect_transitions[io] += 1
+                    elif previous_result == 1: ncorrect_transitions[io] += 1
+                    elif previous_result == 2: nincomplete_information[io] += 1
+                    else: assert(False)
                     continue
 
-                #selected_action = random.random()
-                max_probability = 0.0
-                selected_action = -1
+                rand_function = random.random()
+                for (probability, function) in transitions[key]:
+                    if (rand_function < probability):
+                        break
 
-
-                for (probability, action) in transitions[key]:
-                    if probability > max_probability:
-                        max_probability = probability
-                        selected_action = action
-                    #if probability < selected_action:
-                    #    break
-
-                if selected_action == ground_truth_action:
+                if function == future_node:
+                    ncorrect_transitions[io] += 1
                     previous_result = 1
-                    ncorrect_transitions[order] += 1
                 else:
+                    nincorrect_transitions[io] += 1
                     previous_result = 0
-                    nincorrect_transitions[order] += 1
-
-                # update the ancestor node
-                ancestor_node = ancestor_node.ParentNode()
 
     # calculate the accuracy for each order
     accuracies = []
@@ -179,7 +170,7 @@ def TestMarkovChain(traces, transitions, dataset, max_order, print_verbose=False
         accuracy = 100 * ncorrect_transitions[iv] / (ncorrect_transitions[iv] + nincorrect_transitions[iv] + nincomplete_information[iv])
 
         if print_verbose:
-            print ('{} Order Markov Chain {}'.format(ToOrdinal(iv + 1), dataset))
+            print ('{} Order Markov Chain for k = {}'.format(ToOrdinal(iv + 1), k))
             print ('  Correct: {}'.format(ncorrect_transitions[iv]))
             print ('  Incorrect: {}'.format(nincorrect_transitions[iv]))
             print ('  Incomplete: {}'.format(nincomplete_information[iv]))
