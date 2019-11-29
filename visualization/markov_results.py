@@ -19,11 +19,6 @@ def VisualizeAccuracyCurves(dataset,  accuracies):
     plt.xlabel('Order of Markov Chain', fontsize=14)
     plt.ylabel('Accuracy', fontsize=14)
 
-    # get the maximum k value
-    max_k = len(accuracies) - 1
-    for k in range(1, max_k):
-        assert (len(accuracies[k]) == len(accuracies[k + 1]))
-
     # create the axis for orders
     orders = [iv + 1 for iv in range(len(accuracies[1]))]
 
@@ -32,7 +27,7 @@ def VisualizeAccuracyCurves(dataset,  accuracies):
     ax.set_xlim(1, orders[-1])
     ax.set_ylim(0, 100)
 
-    for k in range(1, max_k + 1, 2):
+    for k in accuracies:
         plt.plot(orders, accuracies[k], label='k = {}'.format(k), marker='x')
 
     plt.legend()

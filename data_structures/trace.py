@@ -5,7 +5,7 @@ class Trace(object):
         self.request_type = request_type
         self.base_id = base_id
         self.node_to_index = {}
-        
+
         # order the nodes by timestamp
         self.ordered_nodes = []
 
@@ -26,8 +26,10 @@ class Trace(object):
         assert (len(self.ordered_nodes[0].parent_nodes) == 0)
 
         # get the total running time for this trace
+        self.maximum_timestamp = self.ordered_nodes[-1].timestamp
         self.duration = self.ordered_nodes[-1].timestamp - self.ordered_nodes[0].timestamp
         assert (self.duration > 0)
+
 
     def Filename(self):
         # this method needs to be overridden by inherited classes
