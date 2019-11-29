@@ -16,6 +16,18 @@ def ReadTrainingFilenames(dataset):
 
 
 
+def ReadValidationFilenames(dataset):
+    validation_list_filename = 'traces/{}/validation-traces.txt'.format(dataset)
+    with open(validation_list_filename, 'r') as fd:
+        return fd.read().splitlines()
+
+
+
+def ReadTrainValFilenames(dataset):
+    return ReadTrainingFilenames(dataset) + ReadValidationFilenames(dataset)
+
+
+
 def ReadTestingFilenames(dataset):
     testing_list_filename = 'traces/{}/testing-traces.txt'.format(dataset)
     with open(testing_list_filename, 'r') as fd:
