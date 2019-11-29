@@ -5,26 +5,25 @@ class Trace(object):
         self.request_type = request_type
         self.base_id = base_id
         self.node_to_index = {}
-
+        
         # order the nodes by timestamp
         self.ordered_nodes = []
-        print (self.base_id)
 
         # populate the helper dictionaries
         for iv, node in enumerate(nodes):
             self.node_to_index[node] = iv
             node.index = iv
-            node.rank = -1
 
         # need this separately since ordering of nodes can change
         for edge in self.edges:
             edge.destination.parent_nodes.append(edge.source)
             edge.source.children_nodes.append(edge.destination)
 
-        # make sure that the first node is the start of the chain
-        assert (len(self.nodes[0].parent_nodes) == 0)
+        # order the nodes
+        self.ordered_nodes = sorted(self.nodes, key=lambda x: (x.timestamp, x.index, x.function_id))
 
-        self.ordered_nodes = sorted(self.nodes, key=lambda x: (x.timestamp, x.rank, x.function_id))
+        # make sure that the first node is the start of the chain
+        assert (len(self.ordered_nodes[0].parent_nodes) == 0)
 
         # get the total running time for this trace
         self.duration = self.ordered_nodes[-1].timestamp - self.ordered_nodes[0].timestamp
@@ -65,7 +64,6 @@ class TraceNode(object):
         self.children_nodes = []
         self.parent_nodes = []
         self.index = -1
-        self.rank = -1
 
     def Name(self):
         # this needs to be overridden by inherited classes
