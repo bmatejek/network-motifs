@@ -39,7 +39,7 @@ def VisualizeAccuracyCurves(dataset,  accuracies):
 
     plt.tight_layout()
 
-    output_filename = 'figures/{}-markov-results.png'.format(trace_source)
+    output_filename = 'figures/{}-markov-results.png'.format(dataset)
     plt.savefig(output_filename)
 
     plt.clf()

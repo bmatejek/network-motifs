@@ -7,7 +7,7 @@ def ToOrdinal(value):
     Convert a numerical value into an ordinal number.
     @param value: the number to be converted
     """
-    
+
     if value % 100//10 != 1:
         if value % 10 == 1:
             ordval = '{}st'.format(value)
