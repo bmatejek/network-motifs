@@ -77,7 +77,7 @@ def FunctionDistribution(dataset, traces):
                 entries.pop(node.id)
 
     # for each function plot the distribution
-    for iv, function in enumerate(sorted(trace_functions)):
+    for iv, function in enumerate(trace_functions):
         distribution = timestamp_distributions[function]
 
         # skip over annotation only functions

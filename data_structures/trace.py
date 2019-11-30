@@ -55,6 +55,14 @@ class Trace(object):
 
         return functions
 
+    def UniqueNames(self):
+        names = set()
+
+        for node in self.nodes:
+            names.add(node.Name())
+
+        return names
+
     def WriteToFile(self):
         # this method needs to be overridden by inherited classes
         assert (False)
@@ -99,7 +107,27 @@ def GetUniqueFunctions(traces):
     for trace in traces:
         functions = functions | trace.UniqueFunctions()
 
-    return functions
+    return sorted(list(functions))
+
+
+
+def GetUniqueNames(traces):
+    names = set()
+
+    for trace in traces:
+        names = names | trace.UniqueNames()
+
+    names = sorted(list(names))
+
+    # needed for quick motif discovery calculations
+    name_to_index = {}
+    index_to_name = {}
+
+    for iv, name in enumerate(names):
+        name_to_index[name] = iv
+        index_to_name[iv] = name
+
+    return names, name_to_index, index_to_name
 
 
 
@@ -109,4 +137,4 @@ def GetUniqueRequestTypes(traces):
     for trace in traces:
         request_types.add(trace.request_type)
 
-    return request_types
+    return sorted(list(request_types))

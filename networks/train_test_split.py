@@ -4,6 +4,10 @@ import random
 
 
 def SplitTraces(dataset, traces, request_types):
+    # do not allow any more splits
+    # currently we assume all functions occur in trainval and testing
+    assert (False)
+
     # there are three different request_types for this set of traces
     traces_by_request_types = {}
     for request_type in request_types:
