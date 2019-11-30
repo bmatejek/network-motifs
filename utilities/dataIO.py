@@ -5,7 +5,7 @@ import struct
 
 from network_motifs.data_structures.open_stack import OpenStackTrace, OpenStackNode, OpenStackEdge
 from network_motifs.data_structures.xtrace import XTrace, XTraceNode, XTraceEdge
-
+from network_motifs.motifs.motif import Motif, Motifs
 
 
 
@@ -153,3 +153,25 @@ def ReadXTrace(trace_filename):
         trace = XTrace(nodes, edges, request_type, request, base_id)
 
         return trace
+
+
+
+def ReadMotifs(dataset, trace):
+    # motif saved location
+    motif_filename = 'motifs/{}/{}.motifs'.format(dataset, trace.base_id)
+
+    with open(motif_filename, 'rb') as fd:
+        nmotifs, = struct.unpack('i', fd.read(4))
+        motifs = []
+        for iv in range(nmotifs):
+            motif_size, = struct.unpack('i', fd.read(4))
+            # get the motif in question
+            motif = ()
+            for im in range(motif_size):
+                element, = struct.unpack('i', fd.read(4))
+                motif = motif + (element,)
+            start_index, end_index, duration, = struct.unpack('iiq', fd.read(16))
+
+            motifs.append(Motif(motif, start_index, end_index, duration))
+
+        return Motifs(dataset, trace, motifs)
