@@ -111,14 +111,12 @@ def GetUniqueFunctions(traces):
 
 
 
-def GetUniqueNames(traces):
-    names = set()
+def GetUniqueNames(dataset):
+    mapping_filename = 'mappings/{}/name-to-index.txt'.format(dataset)
 
-    for trace in traces:
-        names = names | trace.UniqueNames()
-
-    names = sorted(list(names))
-
+    with open(mapping_filename, 'r') as fd:
+        names = fd.read().splitlines()
+    
     # needed for quick motif discovery calculations
     name_to_index = {}
     index_to_name = {}
