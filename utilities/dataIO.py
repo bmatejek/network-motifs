@@ -163,6 +163,8 @@ def ReadMotifs(dataset, trace):
     with open(motif_filename, 'rb') as fd:
         nmotifs, = struct.unpack('i', fd.read(4))
         motifs = []
+
+        # read all of the motifs from file
         for iv in range(nmotifs):
             motif_size, = struct.unpack('i', fd.read(4))
             # get the motif in question
@@ -174,4 +176,5 @@ def ReadMotifs(dataset, trace):
 
             motifs.append(Motif(motif, start_index, end_index, duration))
 
+        # create new motif object which sorts by end index
         return Motifs(dataset, trace, motifs)

@@ -6,7 +6,9 @@ class Motifs(object):
     def __init__(self, dataset, trace, motifs):
         self.dataset = dataset
         self.trace = trace
-        self.motifs = motifs
+        # sort by end index of this motif
+        self.motifs = sorted(motifs, key=lambda x : x.end_index)
+
 
     def WriteToFile(self, dataset):
         motif_filename = 'motifs/{}/{}.motifs'.format(dataset, self.trace.base_id)

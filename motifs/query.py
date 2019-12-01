@@ -20,7 +20,7 @@ def HardMotifs(dataset, motifs_per_request_type):
 
     for filename in filenames:
         trace = dataIO.ReadTrace(dataset, filename)
-
+        
         # get the motifs for this request type
         motifs = motifs_per_request_type[trace.request_type]
 
@@ -43,14 +43,14 @@ def HardMotifs(dataset, motifs_per_request_type):
                     key = key + (seq,)
 
                 # is this a valid motif?
-                if not motif in motifs: continue
+                if not key in motifs: continue
 
                 start_index = iv2
                 end_index = iv1
                 duration = trace.ordered_nodes[end_index].timestamp - trace.ordered_nodes[start_index].timestamp
                 assert (duration >= 0)
 
-                queried_motifs.append(Motif(motif, start_index, end_index, duration))
+                queried_motifs.append(Motif(key, start_index, end_index, duration))
 
         # create the motifs for this trace
         motifs_in_trace = Motifs(dataset, trace, queried_motifs)

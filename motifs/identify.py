@@ -78,8 +78,8 @@ def FindHardMotifsByRequestType(dataset, traces):
         noccurrences = sequence_counts[sequence]
         # what is the frequency of this motif
         frequency = 100 * noccurrences / nsequences[len(sequence)]
-        # only consider motifs with greater than 1.5% frequency or more than 150 occurrences
-        if frequency < 2 and noccurrences < 150: continue
+        # only consider motifs with greater than 2% frequency or at least one occurrence per trace
+        if frequency < 2 and noccurrences < len(traces): continue
 
         motifs.append(sequence)
 
