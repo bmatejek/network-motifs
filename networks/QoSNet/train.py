@@ -9,6 +9,7 @@ import numpy as np
 
 from keras.models import Sequential
 from keras.layers import Dense, Activation, BatchNormalization, Dropout
+from keras.layers.advanced_activations import LeakyReLU
 
 
 
@@ -21,15 +22,17 @@ def QoSNet(parameters):
     # create simple model for this neural network
     model = Sequential()
     model.add(Dense(parameters['first-layer'], input_dim=parameters['nfeatures']))
-    model.add(Activation('sigmoid'))
+    model.add(LeakyReLU(alpha=0.01))
+    model.add(BatchNormalization())
     #model.add(Dropout(0.2))
     model.add(Dense(parameters['second-layer']))
-    model.add(Activation('sigmoid'))
+    model.add(LeakyReLU(alpha=0.01))
+    model.add(BatchNormalization())
     #model.add(Dropout(0.5))
     model.add(Dense(1))
 
     # compile the model
-    model.compile(optimizer='adam', loss='mean_squared_error', metrics=['mse'])
+    model.compile(optimizer='adam', loss='mean_absolute_error', metrics=['mae'])
 
     return model
 
@@ -51,16 +54,13 @@ def GenerateExamples(dataset_features, dataset_labels, parameters, subset='train
     index = 0
     while True:
         for iv in range(batch_size):
-            features = dataset_features[indices[index]]
-            label = dataset_labels[indices[index]]
-
             # put into format for learning
-            input_features[iv,:] = features
-            input_labels[iv] = label
+            input_features[iv,:] = dataset_features[indices[index]]
+            input_labels[iv] = dataset_labels[indices[index]]
 
             # reset the index if overflow
             index += 1
-            if index == len(features):
+            if index == ndata_points:
                 index = 0
                 if subset == 'trainval': random.shuffle(indices)
 
@@ -79,16 +79,16 @@ def Train(dataset):
     validation_features, validation_labels = ReadFeatures(dataset, validation_filenames)
 
     parameters = {}
-    parameters['first-layer'] = 5
-    parameters['second-layer'] = 5
-    parameters['batch_size'] = 10
+    parameters['first-layer'] = 80
+    parameters['second-layer'] = 40
+    parameters['batch_size'] = 1000
     parameters['nfeatures'] = training_features[0].size
 
     # create the simple model
     model = QoSNet(parameters)
 
     # how many example to run for each epoch
-    examples_per_epoch = 5000
+    examples_per_epoch = 20000
     batch_size = parameters['batch_size']
 
     model_prefix = 'networks/QoSNet/architectures/{}-params-{}-{}-batch-size-{}'.format(dataset, parameters['first-layer'], parameters['second-layer'], batch_size)
@@ -104,7 +104,7 @@ def Train(dataset):
     model.fit_generator(
                         GenerateExamples(training_features, training_labels, parameters),
                         steps_per_epoch=examples_per_epoch // batch_size,
-                        epochs=75,
+                        epochs=500,
                         callbacks=callbacks,
                         validation_data=GenerateExamples(validation_features, validation_labels, parameters),
                         validation_steps=examples_per_epoch // batch_size
