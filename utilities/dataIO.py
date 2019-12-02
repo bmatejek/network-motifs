@@ -165,9 +165,10 @@ def ReadXTrace(trace_filename):
 
 
 
-def ReadMotifs(dataset, trace):
+def ReadMotifs(dataset, trace, pruned):
     # motif saved location
-    motif_filename = 'motifs/{}/{}.motifs'.format(dataset, trace.base_id)
+    if pruned: motif_filename = 'motifs/{}/{}-pruned.motifs'.format(dataset, trace.base_id)
+    else: motif_filename = 'motifs/{}/{}-queried.motifs'.format(dataset, trace.base_id)
 
     with open(motif_filename, 'rb') as fd:
         nmotifs, = struct.unpack('i', fd.read(4))

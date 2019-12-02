@@ -73,7 +73,7 @@ def GenerateStatistics(dataset, traces):
 
     # go through all traces and read the motifs
     for trace in traces:
-        trace_motifs = dataIO.ReadMotifs(dataset, trace)
+        trace_motifs = dataIO.ReadMotifs(dataset, trace, pruned=False)
 
         for motif in trace_motifs.motifs:
             motif_name = motif.sequence
@@ -95,7 +95,10 @@ def GenerateStatistics(dataset, traces):
         stddev_duration = 0.0
         for duration in motif_occurrences[motif]:
             stddev_duration += (duration - average_duration) ** 2
-        stddev_duration = math.sqrt(stddev_duration) / (nmotif_occurrences - 1)
+        if nmotif_occurrences == 0 or nmotif_occurrences == 1:
+            stddev_duration = 0.0
+        else:
+            stddev_duration = math.sqrt(stddev_duration) / (nmotif_occurrences - 1)
 
         average_motifs_durations[motif] = average_duration
         stddev_motif_durations[motif] = stddev_duration
@@ -110,7 +113,7 @@ def GenerateStatistics(dataset, traces):
 def PopulateFeatureVectors(dataset, trace, statistics):
     # go through every node in the trace
     request_type = trace.request_type
-    trace_motifs = dataIO.ReadMotifs(dataset, trace)
+    trace_motifs = dataIO.ReadMotifs(dataset, trace, pruned=True)
     motifs = trace_motifs.motifs
     nmotif_sizes = max_motif_size - min_motif_size + 1
 
@@ -151,7 +154,10 @@ def PopulateFeatureVectors(dataset, trace, statistics):
             # get the stats for this motif
             average_duration = statistics['average-duration-per-motif'][motif.sequence]
             stddev_duration = statistics['stddev-duration-per-motif'][motif.sequence]
-            zscore = (motif.duration - average_duration) / stddev_duration
+            if stddev_duration == 0.0:
+                zscore = 0.0
+            else:
+                zscore = (motif.duration - average_duration) / stddev_duration
             motif_size = motifs[motif_index].motif_size
 
             if zscore < -2:

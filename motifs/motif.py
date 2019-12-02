@@ -10,8 +10,9 @@ class Motifs(object):
         self.motifs = sorted(motifs, key=lambda x : x.end_index)
 
 
-    def WriteToFile(self, dataset):
-        motif_filename = 'motifs/{}/{}.motifs'.format(dataset, self.trace.base_id)
+    def WriteToFile(self, dataset, pruned):
+        if pruned: motif_filename = 'motifs/{}/{}-pruned.motifs'.format(dataset, self.trace.base_id)
+        else: motif_filename = 'motifs/{}/{}-queried.motifs'.format(dataset, self.trace.base_id)
 
         with open(motif_filename, 'wb') as fd:
             nmotifs = len(self.motifs)

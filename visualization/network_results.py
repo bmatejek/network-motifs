@@ -69,7 +69,8 @@ def VisualizeNetworkDurations(output_filename_prefix, title, accuracies, duratio
         if not occurrences[bin]: continue
 
         xs.append(bin / nbins)
-        ys.append(duration_errors[bin] / 10 ** 9)
+        if seconds: ys.append(duration_errors[bin] / 10 ** 9)
+        else: ys.append(duration_errors[bin])
 
     plt.plot(xs, ys, label='Accuracy')
 
