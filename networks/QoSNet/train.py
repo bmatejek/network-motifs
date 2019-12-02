@@ -37,7 +37,7 @@ def QoSNet(parameters):
     model.add(Dense(1))
 
     # compile the model
-    model.compile(optimizer='adam', loss='mean_absolute_error', metrics=['mae'])
+    model.compile(optimizer='adam', loss='mean_squared_error', metrics=['mae'])
 
     return model
 

@@ -11,7 +11,7 @@ plt.rc({'fontname', 'Ubuntu'})
 
 
 
-def VisualizeAccuracyCurves(dataset,  request_type, accuracies):
+def VisualizeAccuracyCurves(dataset,  request_type, accuracies, label):
     plt.figure()
 
     if request_type == None:
@@ -31,16 +31,19 @@ def VisualizeAccuracyCurves(dataset,  request_type, accuracies):
     ax.set_ylim(0, 100)
 
     for k in accuracies:
-        plt.plot(orders, accuracies[k], label='k = {}'.format(k), marker='x')
+        plt.plot(orders, accuracies[k], label='k = {}'.format(k))
 
     plt.legend()
 
     plt.tight_layout()
 
+    min_k = min(accuracies.keys())
+    max_k = max(accuracies.keys())
+
     if request_type == None:
-        output_filename = 'figures/{}-markov-results.png'.format(dataset)
+        output_filename = 'figures/{}-markov-results-{}-{}.png'.format(dataset, min_k, max_k)
     else:
-        output_filename = 'figures/{}-{}-markov-results.png'.format(dataset, request_type)
+        output_filename = 'figures/{}-{}-markov-results-{}-{}.png'.format(dataset, request_type, min_k, max_k)
     plt.savefig(output_filename)
 
     plt.clf()

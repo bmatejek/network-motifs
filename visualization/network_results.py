@@ -72,7 +72,7 @@ def VisualizeNetworkDurations(output_filename_prefix, title, accuracies, duratio
         if seconds: ys.append(duration_errors[bin] / 10 ** 9)
         else: ys.append(duration_errors[bin])
 
-    plt.plot(xs, ys, label='Accuracy')
+    plt.plot(xs, ys, label='Mean Absolute Error')
 
     plt.legend()
     plt.tight_layout()

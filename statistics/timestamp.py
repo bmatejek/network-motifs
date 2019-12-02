@@ -19,10 +19,10 @@ def VisualizeDistribution(dataset, distribution, title, filename):
         for iv in range(len(distribution)):
             distribution[iv] = distribution[iv] / 10**9
     else:
-        units = 'nanoseconds'
+        units = 'microseconds'
 
     # plot the figure
-    plt.figure(figsize=(8, 4))
+    plt.figure(figsize=(4, 4))
 
     # write the labels for this set of functions
     plt.title(title, pad=20, fontsize=14)

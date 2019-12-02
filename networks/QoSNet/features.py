@@ -23,7 +23,7 @@ def GenerateStatistics(dataset, traces):
     stddev_duration = 0.0
     for trace in traces:
         stddev_duration += (trace.duration - average_duration) ** 2
-    stddev_duration = math.sqrt(stddev_duration) / (len(traces) - 1)
+    stddev_duration = math.sqrt(stddev_duration / (len(traces) - 1))
 
     statistics['average-duration'] = average_duration
     statistics['stddev-duration'] = stddev_duration
@@ -38,7 +38,7 @@ def GenerateStatistics(dataset, traces):
     stddev_nnodes = 0.0
     for trace in traces:
         stddev_nnodes += (len(trace.nodes) - average_nnodes) ** 2
-    stddev_nodes = math.sqrt(stddev_nnodes) / (len(trace.nodes) - 1)
+    stddev_nnodes = math.sqrt(stddev_nnodes / (len(trace.nodes) - 1))
 
     statistics['average-nnodes'] = average_nnodes
     statistics['stddev-nnodes'] = stddev_nnodes
@@ -64,7 +64,7 @@ def GenerateStatistics(dataset, traces):
         if ntraces_for_average_times[iv] == 1:
             stddev_time_until_node[iv] = 0.0
         else:
-            stddev_time_until_node[iv] = math.sqrt(stddev_time_until_node[iv]) / (ntraces_for_average_times[iv] - 1)
+            stddev_time_until_node[iv] = math.sqrt(stddev_time_until_node[iv] / (ntraces_for_average_times[iv] - 1))
 
     statistics['average-time-until-node'] = average_time_until_node
     statistics['stddev-time-until-node'] = stddev_time_until_node
@@ -98,7 +98,7 @@ def GenerateStatistics(dataset, traces):
         if nmotif_occurrences == 0 or nmotif_occurrences == 1:
             stddev_duration = 0.0
         else:
-            stddev_duration = math.sqrt(stddev_duration) / (nmotif_occurrences - 1)
+            stddev_duration = math.sqrt(stddev_duration / (nmotif_occurrences - 1))
 
         average_motifs_durations[motif] = average_duration
         stddev_motif_durations[motif] = stddev_duration
@@ -121,7 +121,7 @@ def PopulateFeatureVectors(dataset, trace, statistics):
     stddev_duration = statistics['stddev-duration']
 
     # zscore is what we are trying to predict
-    completion_time = (trace.duration - average_duration) / stddev_duration
+    completion_time = 10 * (trace.duration - average_duration) / stddev_duration
 
     # create a feature filename for writing
     feature_filename = 'networks/QoSNet/features/{}/{}.features'.format(dataset, trace.base_id)

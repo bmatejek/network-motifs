@@ -53,7 +53,7 @@ def StackedGraph(dataset, trace):
     for (source_index, destination_index) in edge_list:
         weight = edge_list[source_index, destination_index]
 
-        graph.add_edge(source_index, destination_index, label=weight)
+        graph.add_edge(source_index, destination_index)
 
     # save the graph into dot format
     A = nx.nx_agraph.to_agraph(graph)
