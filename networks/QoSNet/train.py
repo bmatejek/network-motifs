@@ -22,13 +22,17 @@ def QoSNet(parameters):
     # create simple model for this neural network
     model = Sequential()
     model.add(Dense(parameters['first-layer'], input_dim=parameters['nfeatures']))
-    model.add(LeakyReLU(alpha=0.01))
+    model.add(Activation('tanh'))
     model.add(BatchNormalization())
-    #model.add(Dropout(0.2))
+    model.add(Dropout(0.2))
     model.add(Dense(parameters['second-layer']))
-    model.add(LeakyReLU(alpha=0.01))
+    model.add(Activation('tanh'))
     model.add(BatchNormalization())
-    #model.add(Dropout(0.5))
+    model.add(Dropout(0.2))
+    model.add(Dense(parameters['third-layer']))
+    model.add(Activation('tanh'))
+    model.add(BatchNormalization())
+    model.add(Dropout(0.5))
     model.add(Dense(1))
 
     # compile the model
@@ -79,8 +83,9 @@ def Train(dataset):
     validation_features, validation_labels = ReadFeatures(dataset, validation_filenames)
 
     parameters = {}
-    parameters['first-layer'] = 80
-    parameters['second-layer'] = 40
+    parameters['first-layer'] = 40
+    parameters['second-layer'] = 20
+    parameters['third-layer'] = 10
     parameters['batch_size'] = 1000
     parameters['nfeatures'] = training_features[0].size
 
@@ -91,7 +96,7 @@ def Train(dataset):
     examples_per_epoch = 20000
     batch_size = parameters['batch_size']
 
-    model_prefix = 'networks/QoSNet/architectures/{}-params-{}-{}-batch-size-{}'.format(dataset, parameters['first-layer'], parameters['second-layer'], batch_size)
+    model_prefix = 'networks/QoSNet/architectures/{}-params-{}-{}-{}-batch-size-{}'.format(dataset, parameters['first-layer'], parameters['second-layer'], parameters['third-layer'], batch_size)
 
     # create the set of keras callbacks
     callbacks = []
@@ -104,7 +109,7 @@ def Train(dataset):
     model.fit_generator(
                         GenerateExamples(training_features, training_labels, parameters),
                         steps_per_epoch=examples_per_epoch // batch_size,
-                        epochs=500,
+                        epochs=5000,
                         callbacks=callbacks,
                         validation_data=GenerateExamples(validation_features, validation_labels, parameters),
                         validation_steps=examples_per_epoch // batch_size

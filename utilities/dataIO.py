@@ -9,27 +9,36 @@ from network_motifs.motifs.motif import Motif, Motifs
 
 
 
-def ReadTrainingFilenames(dataset):
-    training_list_filename = 'traces/{}/training-traces.txt'.format(dataset)
+def ReadTrainingFilenames(dataset, request_type=None):
+    if request_type == None:
+        training_list_filename = 'traces/{}/training-traces.txt'.format(dataset)
+    else:
+        training_list_filename = 'traces/{}/{}-training-traces.txt'.format(dataset, request_type)
     with open(training_list_filename, 'r') as fd:
         return fd.read().splitlines()
 
 
 
-def ReadValidationFilenames(dataset):
-    validation_list_filename = 'traces/{}/validation-traces.txt'.format(dataset)
+def ReadValidationFilenames(dataset, request_type=None):
+    if request_type == None:
+        validation_list_filename = 'traces/{}/validation-traces.txt'.format(dataset)
+    else:
+        validation_list_filename = 'traces/{}/{}-validation-traces.txt'.format(dataset, request_type)
     with open(validation_list_filename, 'r') as fd:
         return fd.read().splitlines()
 
 
 
-def ReadTrainValFilenames(dataset):
-    return ReadTrainingFilenames(dataset) + ReadValidationFilenames(dataset)
+def ReadTrainValFilenames(dataset, request_type=None):
+    return ReadTrainingFilenames(dataset, request_type) + ReadValidationFilenames(dataset, request_type)
 
 
 
-def ReadTestingFilenames(dataset):
-    testing_list_filename = 'traces/{}/testing-traces.txt'.format(dataset)
+def ReadTestingFilenames(dataset, request_type=None):
+    if request_type == None:
+        testing_list_filename = 'traces/{}/testing-traces.txt'.format(dataset)
+    else:
+        testing_list_filename = 'traces/{}/{}-testing-traces.txt'.format(dataset, request_type)
     with open(testing_list_filename, 'r') as fd:
         return fd.read().splitlines()
 

@@ -44,14 +44,23 @@ def Forward(dataset):
     validation_features, validation_labels = ReadFeatures(dataset, validation_filenames)
     testing_features, testing_labels = ReadFeatures(dataset, testing_filenames)
 
+    # nexamples = 30000
+    # training_features = training_features[:nexamples]
+    # training_labels = training_labels[:nexamples]
+    # validation_features = validation_features[:nexamples]
+    # validation_labels = validation_labels[:nexamples]
+    # testing_features = testing_features[:nexamples]
+    # testing_labels = testing_labels[:nexamples]
+
     parameters = {}
-    parameters['first-layer'] = 80
-    parameters['second-layer'] = 40
+    parameters['first-layer'] = 40
+    parameters['second-layer'] = 20
+    parameters['third-layer'] = 10
     parameters['batch_size'] = 1000
     parameters['nfeatures'] = training_features[0].size
 
     # get the prefix for where this model is saved
-    model_prefix = 'networks/QoSNet/architectures/{}-params-{}-{}-batch-size-{}'.format(dataset, parameters['first-layer'], parameters['second-layer'], parameters['batch_size'])
+    model_prefix = 'networks/QoSNet/architectures/{}-params-{}-{}-{}-batch-size-{}'.format(dataset, parameters['first-layer'], parameters['second-layer'], parameters['third-layer'], parameters['batch_size'])
     # load the model with best weights
     model = model_from_json(open('{}.json'.format(model_prefix), 'r').read())
     model.load_weights('{}-best-loss.h5'.format(model_prefix))

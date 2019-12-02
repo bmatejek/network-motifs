@@ -33,20 +33,26 @@ def SplitTraces(dataset, traces, request_types):
         validation_traces = traces[train_split:validation_split]
         testing_traces = traces[validation_split:]
 
-        for trace in training_traces:
-            trace_filename = 'traces/{}/{}.trace'.format(dataset, trace.base_id)
-            assert (os.path.exists(trace_filename))
-            training_filenames.append(trace_filename)
+        with open('traces/{}/{}-training-traces.txt'.format(dataset, request_type), 'w') as fd:
+            for trace in training_traces:
+                trace_filename = 'traces/{}/{}.trace'.format(dataset, trace.base_id)
+                assert (os.path.exists(trace_filename))
+                training_filenames.append(trace_filename)
+                fd.write('{}\n'.format(trace_filename))
 
-        for trace in validation_traces:
-            trace_filename = 'traces/{}/{}.trace'.format(dataset, trace.base_id)
-            assert (os.path.exists(trace_filename))
-            validation_filenames.append(trace_filename)
+        with open('traces/{}/{}-validation-traces.txt'.format(dataset, request_type), 'w') as fd:
+            for trace in validation_traces:
+                trace_filename = 'traces/{}/{}.trace'.format(dataset, trace.base_id)
+                assert (os.path.exists(trace_filename))
+                validation_filenames.append(trace_filename)
+                fd.write('{}\n'.format(trace_filename))
 
-        for trace in testing_traces:
-            trace_filename = 'traces/{}/{}.trace'.format(dataset, trace.base_id)
-            assert (os.path.exists(trace_filename))
-            testing_filenames.append(trace_filename)
+        with open('traces/{}/{}-testing-traces.txt'.format(dataset, request_type), 'w') as fd:
+            for trace in testing_traces:
+                trace_filename = 'traces/{}/{}.trace'.format(dataset, trace.base_id)
+                assert (os.path.exists(trace_filename))
+                testing_filenames.append(trace_filename)
+                fd.write('{}\n'.format(trace_filename))
 
     # make sure the three lists are disjoint
     assert (set(training_filenames).isdisjoint(set(testing_filenames)))
