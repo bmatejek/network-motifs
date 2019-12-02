@@ -1,26 +1,16 @@
 from network_motifs.utilities import dataIO
 from network_motifs.motifs.identify import ConvertTracesToSequenceArrays
 from network_motifs.motifs.motif import Motif, Motifs
+from network_motifs.motifs.constants import min_motif_size, max_motif_size
 
 
 
 def HardMotifs(dataset, motifs_per_request_type):
     filenames = dataIO.ReadFilenames(dataset)
 
-    min_motif_size = 2 ** 32
-    max_motif_size = 0
-
-    for request_type in motifs_per_request_type:
-        for motif in motifs_per_request_type[request_type]:
-            motif_size = len(motif)
-            if motif_size > max_motif_size:
-                max_motif_size = motif_size
-            if motif_size < min_motif_size:
-                min_motif_size = motif_size
-
     for filename in filenames:
         trace = dataIO.ReadTrace(dataset, filename)
-        
+
         # get the motifs for this request type
         motifs = motifs_per_request_type[trace.request_type]
 

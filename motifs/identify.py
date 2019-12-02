@@ -4,6 +4,7 @@ import numpy as np
 
 from network_motifs.data_structures.trace import GetUniqueNames
 from network_motifs.utilities import dataIO
+from network_motifs.motifs.constants import min_motif_size, max_motif_size
 
 
 
@@ -33,9 +34,6 @@ def FindHardMotifsByRequestType(dataset, traces):
 
     # first find the most frequent hard motifs
     sequence_counts = {}
-    # only consider motifs of a certain size
-    max_motif_size = 20
-    min_motif_size = 5
 
     nsequences = {}
     for motif_size in range(min_motif_size, max_motif_size + 1):
