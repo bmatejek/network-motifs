@@ -130,9 +130,7 @@ def PopulateFeatureVectors(dataset, trace, statistics):
     fd.write(struct.pack('i', nnodes))
     nfeatures_per_node = 6 + 3 * nmotif_sizes
     fd.write(struct.pack('i', nfeatures_per_node))
-    # valuable information for calculating timestamp prediction
-    fd.write(struct.pack('ffi', average_duration, stddev_duration, len(trace.ordered_nodes)))
-
+    
     # keep track of the index for motifs
     motif_index = 0
     motif_stddev_below = {}
@@ -213,7 +211,6 @@ def ReadFeatures(dataset, trace_filenames):
     # create the list of features
     dataset_features = []
     dataset_labels = []
-    dataset_statistics = []
 
     for trace_filename in trace_filenames:
         base_id = trace_filename.split('/')[-1].split('.')[0]
@@ -221,9 +218,6 @@ def ReadFeatures(dataset, trace_filenames):
         feature_filename = 'networks/QoSNet/features/{}/{}.features'.format(dataset, base_id)
         with open(feature_filename, 'rb') as fd:
             nnodes, nfeatures_per_node, = struct.unpack('ii', fd.read(8))
-
-            # valuable information for calculating timestamp prediction (NOT USED AS FEATURES)
-            average_duration, stddev_duration, nnodes, = struct.unpack('ffi', fd.read(12))
 
             for iv in range(nnodes):
                 features = np.zeros(nfeatures_per_node, dtype=np.float32)
@@ -235,10 +229,9 @@ def ReadFeatures(dataset, trace_filenames):
 
                 dataset_features.append(features)
                 dataset_labels.append(label)
-                dataset_statistics.append((average_duration, stddev_duration, nnodes))
 
     # return the features and labels
-    return dataset_features, dataset_labels, dataset_statistics
+    return dataset_features, dataset_labels
 
 
 

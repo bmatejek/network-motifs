@@ -82,8 +82,8 @@ def Train(dataset):
         training_filenames = dataIO.ReadTrainingFilenames(dataset, request_type)
         validation_filenames = dataIO.ReadValidationFilenames(dataset, request_type)
 
-        training_features, training_labels, _ = ReadFeatures(dataset, training_filenames)
-        validation_features, validation_labels, _ = ReadFeatures(dataset, validation_filenames)
+        training_features, training_labels = ReadFeatures(dataset, training_filenames)
+        validation_features, validation_labels = ReadFeatures(dataset, validation_filenames)
 
         parameters = {}
         parameters['first-layer'] = 512
