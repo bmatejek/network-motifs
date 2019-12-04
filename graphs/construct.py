@@ -1,3 +1,7 @@
+import random
+
+
+
 import networkx as nx
 
 
@@ -8,9 +12,18 @@ def OriginalGraph(dataset, trace):
 
     # create a directred graph
     graph = nx.DiGraph()
+    print (trace.base_id)
+    nsequences = len(trace.sequences)
+    colors = ['red', 'green', 'blue', 'orange', 'cyan', 'magenta']
+    color_map = []
+    for iv in range(nsequences):
+        color_map.append(random.choice(colors))
 
     for index, node in enumerate(nodes):
-        graph.add_node(index, label=node.Name())
+        if node.sequence == None:
+            graph.add_node(index, label=node.Name(), color='black')
+        else:
+            graph.add_node(index, label=node.Name(), color=color_map[node.sequence.index])
 
     for edge in edges:
         graph.add_edge(edge.source.index, edge.destination.index)
@@ -23,6 +36,8 @@ def OriginalGraph(dataset, trace):
 
 
 def StackedGraph(dataset, trace):
+    return
+
     nodes = trace.nodes
     edges = trace.edges
 
