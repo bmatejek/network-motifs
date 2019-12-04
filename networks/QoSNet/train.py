@@ -99,10 +99,7 @@ def Train(dataset):
         examples_per_epoch = 20000
         batch_size = parameters['batch_size']
 
-        if request_type == None:
-            model_prefix = 'networks/QoSNet/architectures/{}-params-{}-{}-{}-batch-size-{}'.format(dataset, parameters['first-layer'], parameters['second-layer'], parameters['third-layer'], batch_size)
-        else:
-            model_prefix = 'networks/QoSNet/architectures/{}-request-type-{}-params-{}-{}-{}-batch-size-{}'.format(dataset, request_type, parameters['first-layer'], parameters['second-layer'], parameters['third-layer'], batch_size)
+        model_prefix = 'networks/QoSNet/architectures/{}-request-type-{}-params-{}-{}-{}-batch-size-{}'.format(dataset, request_type, parameters['first-layer'], parameters['second-layer'], parameters['third-layer'], batch_size)
 
         # create the set of keras callbacks
         callbacks = []

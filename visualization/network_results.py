@@ -47,8 +47,6 @@ def VisualizeNetworkDurations(output_filename_prefix, title, accuracies, duratio
     plt.title(title, fontsize=20)
     plt.xlabel('Percent Trace Completed', fontsize=16)
 
-
-
     max_error = max(duration_errors)
     if max_error > 10 ** 9:
         seconds = True

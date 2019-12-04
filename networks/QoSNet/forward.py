@@ -107,7 +107,6 @@ def CalculateResults(dataset, request_type, model, features, labels, parameters)
 
 def Forward(dataset):
     for request_type in request_types_per_dataset[dataset]:
-        if request_type == None: continue
         # read the training and validation features from disk
         #training_filenames = dataIO.ReadTrainingFilenames(dataset, request_type)
         #validation_filenames = dataIO.ReadValidationFilenames(dataset, request_type)
@@ -125,10 +124,7 @@ def Forward(dataset):
         parameters['nfeatures'] = testing_features[0].size
 
         # get the prefix for where this model is saved
-        if request_type == None:
-            model_prefix = 'networks/QoSNet/architectures/{}-params-{}-{}-{}-batch-size-{}'.format(dataset, parameters['first-layer'], parameters['second-layer'], parameters['third-layer'], parameters['batch_size'])
-        else:
-            model_prefix = 'networks/QoSNet/architectures/{}-request-type-{}-params-{}-{}-{}-batch-size-{}'.format(dataset, request_type, parameters['first-layer'], parameters['second-layer'], parameters['third-layer'], parameters['batch_size'])
+        model_prefix = 'networks/QoSNet/architectures/{}-request-type-{}-params-{}-{}-{}-batch-size-{}'.format(dataset, request_type, parameters['first-layer'], parameters['second-layer'], parameters['third-layer'], parameters['batch_size'])
 
         # load the model with best weights
         model = model_from_json(open('{}.json'.format(model_prefix), 'r').read())
@@ -139,9 +135,6 @@ def Forward(dataset):
         CalculateResults(dataset, request_type, model, testing_features, testing_labels, parameters)
 
         # output_filename_prefix = '{}-results'.format(model_prefix)
-        # if request_type == None:
-        #     title = '{}'.format(human_readable[dataset])
-        # else:
-        #     title = '{} {}'.format(human_readable[dataset], request_type)
+        # title = '{} {}'.format(human_readable[dataset], request_type)
         #
         # network_results.VisualizeNetworkDurations(output_filename_prefix, title, accuracies, duration_errors, occurrences)

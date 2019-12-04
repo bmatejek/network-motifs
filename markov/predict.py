@@ -97,6 +97,7 @@ def TrainMarkovChain(training_traces, max_order, k = 1):
                 else:
                     counts[key][future_node] += 1
 
+
     # convert the counts from above to transitions from a given key
     transitions = GenerateTransitionMatrix(counts)
 

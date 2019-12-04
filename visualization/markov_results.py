@@ -11,13 +11,10 @@ plt.rc({'fontname', 'Ubuntu'})
 
 
 
-def VisualizeAccuracyCurves(dataset,  request_type, accuracies, label):
+def VisualizeAccuracyCurves(dataset, request_type, accuracies, label):
     plt.figure()
 
-    if request_type == None:
-        title = '{} Markov Chain Results'.format(human_readable[dataset])
-    else:
-        title = '{} {} Markov Chain Results'.format(human_readable[dataset], request_type)
+    title = '{} {} Markov Chain Results'.format(human_readable[dataset], request_type)
     plt.title(title, fontsize=16)
     plt.xlabel('Order of Markov Chain', fontsize=14)
     plt.ylabel('Accuracy', fontsize=14)
@@ -40,10 +37,7 @@ def VisualizeAccuracyCurves(dataset,  request_type, accuracies, label):
     min_k = min(accuracies.keys())
     max_k = max(accuracies.keys())
 
-    if request_type == None:
-        output_filename = 'figures/{}-markov-results-{}-{}.png'.format(dataset, min_k, max_k)
-    else:
-        output_filename = 'figures/{}-{}-markov-results-{}-{}.png'.format(dataset, request_type, min_k, max_k)
+    output_filename = 'figures/{}-{}-markov-results-{}-{}.png'.format(dataset, request_type, min_k, max_k)
     plt.savefig(output_filename)
 
     plt.clf()

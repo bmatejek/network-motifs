@@ -6,6 +6,6 @@ human_readable = {
 
 
 request_types_per_dataset = {
-    'openstack': ['ServerCreate', 'ServerDelete', 'ServerList', None],
-    'xtrace': ['get', 'ls', 'put', 'rm', None]
+    'openstack': ['ServerCreate', 'ServerDelete', 'ServerList'],
+    'xtrace': ['get', 'ls', 'put', 'rm']
 }

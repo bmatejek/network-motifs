@@ -3,7 +3,7 @@ import random
 
 
 
-def SplitTraces(dataset, traces, request_types):
+def SplitTraces(dataset, traces):
     # do not allow any more splits
     # currently we assume all functions occur in trainval and testing
     assert (False)
@@ -14,7 +14,8 @@ def SplitTraces(dataset, traces, request_types):
         traces_by_request_types[request_type] = []
 
     for trace in traces:
-        assert (trace.request_type in request_types)
+        if not trace.request_type in traces_by_request_types:
+            traces_by_request_types[trace.request_type] = []
         traces_by_request_types[trace.request_type].append(trace)
 
     training_filenames = []
@@ -58,19 +59,3 @@ def SplitTraces(dataset, traces, request_types):
     assert (set(training_filenames).isdisjoint(set(testing_filenames)))
     assert (set(training_filenames).isdisjoint(set(validation_filenames)))
     assert (set(validation_filenames).isdisjoint(set(testing_filenames)))
-
-    # write the three files
-    training_list_filename = 'traces/{}/training-traces.txt'.format(dataset)
-    with open(training_list_filename, 'w') as fd:
-        for training_filename in training_filenames:
-            fd.write('{}\n'.format(training_filename))
-
-    validation_list_filename = 'traces/{}/validation-traces.txt'.format(dataset)
-    with open(validation_list_filename, 'w') as fd:
-        for validation_filename in validation_filenames:
-            fd.write('{}\n'.format(validation_filename))
-
-    testing_list_filename = 'traces/{}/testing-traces.txt'.format(dataset)
-    with open(testing_list_filename, 'w') as fd:
-        for testing_filename in testing_filenames:
-            fd.write('{}\n'.format(testing_filename))
