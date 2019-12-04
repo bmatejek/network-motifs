@@ -3,10 +3,16 @@ import random
 
 
 
+from network_motifs.utilities.constants import request_types_by_dataset
+
+
+
 def SplitTraces(dataset, traces):
     # do not allow any more splits
     # currently we assume all functions occur in trainval and testing
     assert (False)
+
+    request_types = request_types_by_dataset[dataset]
 
     # there are three different request_types for this set of traces
     traces_by_request_types = {}
@@ -14,8 +20,7 @@ def SplitTraces(dataset, traces):
         traces_by_request_types[request_type] = []
 
     for trace in traces:
-        if not trace.request_type in traces_by_request_types:
-            traces_by_request_types[trace.request_type] = []
+        assert (trace.request_type in request_types)
         traces_by_request_types[trace.request_type].append(trace)
 
     training_filenames = []
