@@ -7,12 +7,20 @@ import networkx as nx
 
 
 def OriginalGraph(dataset, trace):
+    """
+    Construct a 'dot' file graph for this trace. Each node in the trace gets
+    a unique node in the graph with edges indicating parent-child relations.
+    Nodes in different node sequences are different colors.
+    @param dataset: the dataset name that the trace belongs to
+    @param trace: the trace for which to construct a graph
+    """
     nodes = trace.nodes
     edges = trace.edges
 
     # create a directred graph
     graph = nx.DiGraph()
-    print (trace.base_id)
+
+    # each sequence receives a unique coloring
     nsequences = len(trace.sequences)
     colors = ['red', 'green', 'blue', 'orange', 'cyan', 'magenta']
     color_map = []
@@ -25,6 +33,7 @@ def OriginalGraph(dataset, trace):
         else:
             graph.add_node(index, label=node.Name(), color=color_map[node.sequence.index])
 
+    # populate the edges in the graph
     for edge in edges:
         graph.add_edge(edge.source.index, edge.destination.index)
 
@@ -36,8 +45,13 @@ def OriginalGraph(dataset, trace):
 
 
 def StackedGraph(dataset, trace):
-    return
-
+    """
+    Construct a 'dot' file graph for this trace. Each function in the trace gets
+    a unique node in the graph with edges indicating parent-child relations.
+    One function can occur multiple times in the trace.
+    @param dataset: the dataset name that the trace belongs to
+    @param trace: the trace for which to construct a graph
+    """
     nodes = trace.nodes
     edges = trace.edges
 
@@ -55,19 +69,15 @@ def StackedGraph(dataset, trace):
         graph.add_node(index, label=node_name)
         node_name_to_index[node_name] = index
 
-    edge_list = {}
+    # create a list of edges
+    edge_list = set()
     for edge in edges:
         source_index = node_name_to_index[edge.source.Name()]
         destination_index = node_name_to_index[edge.destination.Name()]
 
-        if not (source_index, destination_index) in edge_list:
-            edge_list[(source_index, destination_index)] = 1
-        else:
-            edge_list[(source_index, destination_index)] += 1
+        edge_list.add((source_index, destination_index))
 
     for (source_index, destination_index) in edge_list:
-        weight = edge_list[source_index, destination_index]
-
         graph.add_edge(source_index, destination_index)
 
     # save the graph into dot format
