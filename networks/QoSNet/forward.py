@@ -18,7 +18,7 @@ from network_motifs.visualization import network_results
 
 
 
-def CalculateResults(dataset, request_type, model, features, labels, parameters):
+def CalculateResults(dataset, request_type, model, features, labels, parameters, with_motifs):
     # read in critical statistics
     statistics_filename = 'statistics/QoS-{}-{}.stat'.format(dataset, request_type)
     with open(statistics_filename, 'rb') as fd:
@@ -77,7 +77,8 @@ def CalculateResults(dataset, request_type, model, features, labels, parameters)
     mae_duration /= nexamples
     mae_baseline /= nexamples
 
-    print ('{} {}'.format(dataset, request_type))
+    if with_motifs: print ('{} {} With Motifs'.format(dataset, request_type))
+    else: print ('{} {} Without Motifs'.format(dataset, request_type))
     print ('  Mean Absolute Error (ZScore): {:0.2f}'.format(mae))
     if (mae_duration > 10**9):
         print ('  Mean Absolute Error (Duration): {:0.2f} seconds'.format(mae_duration / 10**9))
@@ -106,35 +107,27 @@ def CalculateResults(dataset, request_type, model, features, labels, parameters)
 
 
 def Forward(dataset):
-    for request_type in request_types_per_dataset[dataset]:
-        # read the training and validation features from disk
-        #training_filenames = dataIO.ReadTrainingFilenames(dataset, request_type)
-        #validation_filenames = dataIO.ReadValidationFilenames(dataset, request_type)
-        testing_filenames = dataIO.ReadTestingFilenames(dataset, request_type)
+    # run inference with and without motifs
+    for with_motifs in [True, False]:
+        # create a new model for every request type
+        for request_type in request_types_per_dataset[dataset]:
+            testing_filenames = dataIO.ReadTestingFilenames(dataset, request_type)
 
-        #training_features, training_labels = ReadFeatures(dataset, training_filenames)
-        #validation_features, validation_labels = ReadFeatures(dataset, validation_filenames)
-        testing_features, testing_labels = ReadFeatures(dataset, testing_filenames)
+            testing_features, testing_labels = ReadFeatures(dataset, testing_filenames, with_motifs)
 
-        parameters = {}
-        parameters['first-layer'] = 512
-        parameters['second-layer'] = 256
-        parameters['third-layer'] = 128
-        parameters['batch_size'] = 1000
-        parameters['nfeatures'] = testing_features[0].size
+            parameters = {}
+            parameters['first-layer'] = 512
+            parameters['second-layer'] = 256
+            parameters['third-layer'] = 128
+            parameters['batch_size'] = 1000
+            parameters['nfeatures'] = testing_features[0].size
 
-        # get the prefix for where this model is saved
-        model_prefix = 'networks/QoSNet/architectures/{}-request-type-{}-params-{}-{}-{}-batch-size-{}'.format(dataset, request_type, parameters['first-layer'], parameters['second-layer'], parameters['third-layer'], parameters['batch_size'])
+            # get the prefix for where this model is saved
+            if with_motifs: model_prefix = 'networks/QoSNet/architectures/{}-request-type-{}-params-{}-{}-{}-batch-size-{}-with-motifs'.format(dataset, request_type, parameters['first-layer'], parameters['second-layer'], parameters['third-layer'], parameters['batch_size'])
+            else: model_prefix = 'networks/QoSNet/architectures/{}-request-type-{}-params-{}-{}-{}-batch-size-{}'.format(dataset, request_type, parameters['first-layer'], parameters['second-layer'], parameters['third-layer'], parameters['batch_size'])
 
-        # load the model with best weights
-        model = model_from_json(open('{}.json'.format(model_prefix), 'r').read())
-        model.load_weights('{}-best-loss.h5'.format(model_prefix))
+            # load the model with best weights
+            model = model_from_json(open('{}.json'.format(model_prefix), 'r').read())
+            model.load_weights('{}-best-loss.h5'.format(model_prefix))
 
-        #CalculateResults(model, training_features, training_labels, training_statistics, parameters, 'Training')
-        #CalculateResults(model, validation_features, validation_labels, validation_statistics, parameters, 'Validation')
-        CalculateResults(dataset, request_type, model, testing_features, testing_labels, parameters)
-
-        # output_filename_prefix = '{}-results'.format(model_prefix)
-        # title = '{} {}'.format(human_readable[dataset], request_type)
-        #
-        # network_results.VisualizeNetworkDurations(output_filename_prefix, title, accuracies, duration_errors, occurrences)
+            CalculateResults(dataset, request_type, model, testing_features, testing_labels, parameters, with_motifs)
