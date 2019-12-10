@@ -6,7 +6,7 @@ plt.rc({'fontname', 'Ubuntu'})
 
 
 
-from network_motifs.data_structures.trace import GetUniqueFunctions, GetUniqueRequestTypes
+from network_motifs.data_structures.trace import GetUniqueFunctions
 from network_motifs.utilities.constants import *
 
 
@@ -100,7 +100,7 @@ def FunctionDistribution(dataset, traces):
 
 
 def RequestTypesDistribution(dataset, traces):
-    trace_request_types = GetUniqueRequestTypes(traces)
+    trace_request_types = request_types_per_dataset[dataset]
 
     # begin to keep track of the distributions
     timestamp_distributions = {}
