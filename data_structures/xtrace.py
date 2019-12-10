@@ -8,14 +8,29 @@ from network_motifs.data_structures.trace import Trace, TraceNode, TraceEdge
 
 class XTrace(Trace):
     def __init__(self, nodes, edges, request_type, request, base_id):
+        """
+        Trace data structure for the XTrace traces.
+        @param nodes: list of nodes in the trace.
+        @param edges: list of edges that connect nodes together.
+        @param request_type: corresponding request: rm, get, ls, put
+        @param request: the actual request from the shell (e.g., rm file.txt)
+        @param base_id: unique base id for this trace corresponding to node[0] id
+        """
         self.request = request
 
         Trace.__init__(self, nodes, edges, request_type, base_id)
 
     def Filename(self):
+        """
+        Returns the filename corresponding to this xtrace trace
+        """
         return 'traces/xtrace/{}.trace'.format(self.base_id)
 
     def WriteToFile(self):
+        """
+        Write this XTrace trace to a binary file. There are a series of checks
+        to make sure that the attributes fit within character buffers
+        """
         # maximum size for strings
         max_bytes = 32
         max_function_bytes = 64
@@ -63,13 +78,28 @@ class XTrace(Trace):
 
 class XTraceNode(TraceNode):
     def __init__(self, id, function_id, timestamp):
+        """
+        Node data structure for the XTrace traces.
+        @param id: the id for this node (unique per node)
+        @param function_id: the name of the function for this node
+        @param timestamp: the time that this function is called
+        """
         TraceNode.__init__(self, id, function_id, timestamp)
 
     def Name(self):
+        """
+        Returns the name corresponding to this node (function_id)
+        """
         return self.function_id
 
 
 
 class XTraceEdge(TraceEdge):
     def __init__(self, source, destination, duration):
+        """
+        Edge data structure for the XTrace traces.
+        @param source: source node (XTraceNode)
+        @param destination: destination node (XTraceNode)
+        @param duration: difference in timestamps between destination and source
+        """
         TraceEdge.__init__(self, source, destination, duration)

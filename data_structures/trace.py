@@ -1,5 +1,17 @@
 class Trace(object):
     def __init__(self, nodes, edges, request_type, base_id):
+        """
+        Initialize a trace object given an input graph. The constructor also
+        initializes attributes for the nodes and edges objects so needs to be
+        called with populated nodes and edges. Also creates mappings from
+        node_to_index and an list of nodes ordered by timestamp. For easier use,
+        there are also attributes minimum_timestamp and maximum_timestamp.
+        Sequences represent linear, one-to-one sequence occurrences in the graph.
+        @param nodes: list of nodes corresponding to this trace
+        @param edges: list of edges corresponding to this trace
+        @param request_type: the request that started this execution trace
+        @param base_id: a unique identifier for this trace
+        """
         self.nodes = nodes
         self.edges = edges
         self.request_type = request_type
@@ -90,10 +102,16 @@ class Trace(object):
 
 
     def Filename(self):
+        """
+        Overriden method that returns the file location for this trace.
+        """
         # this method needs to be overridden by inherited classes
         assert (False)
 
     def UniqueFunctions(self):
+        """
+        Returns the unique functions for all nodes in this trace.
+        """
         functions = set()
 
         for node in self.nodes:
@@ -102,6 +120,10 @@ class Trace(object):
         return functions
 
     def UniqueNames(self):
+        """
+        Returns the list of unique names for all nodes in this trace. Can differ
+        from children traces since names can rely on variants/attributes.
+        """
         names = set()
 
         for node in self.nodes:
@@ -110,10 +132,17 @@ class Trace(object):
         return names
 
     def WriteToFile(self):
+        """
+        Overridden method that writes this trace to file.
+        """
         # this method needs to be overridden by inherited classes
         assert (False)
 
     def KthNode(self, k):
+        """
+        @param k: the index of the node we want
+        Returns the kth node in the ordered list of nodes
+        """
         # ignore out of range nodes
         if k < 0: return None
         if k >= len(self.nodes): return None
@@ -124,6 +153,14 @@ class Trace(object):
 
 class TraceNode(object):
     def __init__(self, id, function_id, timestamp):
+        """
+        Constructor for the TraceNode object that represents one node in the graph.
+        The attributes children_nodes, parent_nodes, sequence, and index are
+        populated when the node is sent to the Trace constructor.
+        @param id: the id for this node (should be unique among entry/exit)
+        @param function_id: what function corresponds to this node.
+        @param timestamp: when did this node occur.
+        """
         self.id = id
         self.function_id = function_id
         self.timestamp = timestamp
@@ -135,6 +172,9 @@ class TraceNode(object):
         self.index = -1
 
     def Name(self):
+        """
+        Overriden method that returns an identifier for this node.
+        """
         # this needs to be overridden by inherited classes
         assert (False)
 
@@ -142,6 +182,12 @@ class TraceNode(object):
 
 class TraceEdge(object):
     def __init__(self, source, destination, duration):
+        """
+        Constructor for the TraceEdge object that represents one edge in the graph.
+        @param source: the source TraceNode object
+        @param destination: the destination TraceNode object
+        @param duration: the time duration for this edge (difference of timestamps)
+        """
         self.source = source
         self.destination = destination
         self.duration = duration
@@ -193,6 +239,9 @@ class TraceNodeSequence(object):
 
 
 def GetUniqueFunctions(traces):
+    """
+    Returns the unique set of functions for the input list of traces.
+    """
     functions = set()
 
     for trace in traces:
@@ -203,6 +252,11 @@ def GetUniqueFunctions(traces):
 
 
 def GetUniqueNames(dataset):
+    """
+    Returns names, name_to_index, and index_to_name, corresponding to
+    the unique names of functions in this dataset, a mapping from the name to
+    an index, and the mapping from the index to the name.
+    """
     mapping_filename = 'mappings/{}/name-to-index.txt'.format(dataset)
 
     with open(mapping_filename, 'r') as fd:
@@ -217,13 +271,3 @@ def GetUniqueNames(dataset):
         index_to_name[iv] = name
 
     return names, name_to_index, index_to_name
-
-
-
-def GetUniqueRequestTypes(traces):
-    request_types = set()
-
-    for trace in traces:
-        request_types.add(trace.request_type)
-
-    return sorted(list(request_types))

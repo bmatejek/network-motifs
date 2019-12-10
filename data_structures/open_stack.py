@@ -8,12 +8,26 @@ from network_motifs.data_structures.trace import Trace, TraceNode, TraceEdge
 
 class OpenStackTrace(Trace):
     def __init__(self, nodes, edges, request_type, base_id):
+        """
+        Trace data structure for the OpenStack traces.
+        @param nodes: list of nodes in the trace.
+        @param edges: list of edges that connect nodes together.
+        @param request_type: corresponding request: ServerCreate, ServerDelete, ServerList
+        @param base_id: unique base id for this trace corresponding to node[0] id
+        """
         Trace.__init__(self, nodes, edges, request_type, base_id)
 
     def Filename(self):
+        """
+        Returns the filename corresponding to this open stack trace
+        """
         return 'traces/openstack/{}.trace'.format(self.base_id)
 
     def WriteToFile(self):
+        """
+        Write this OpenStack trace to a binary file. There are a series of checks
+        to make sure that the attributes fit within character buffers
+        """
         # maximum size for strings
         max_bytes = 48
         max_function_bytes = 196
@@ -65,17 +79,36 @@ class OpenStackTrace(Trace):
 
 class OpenStackNode(TraceNode):
     def __init__(self, id, function_id, timestamp, variant):
+        """
+        Node data structure for the OpenStack traces. Has variant type compared
+        to inherited class TraceNode.
+        @param id: the id for this node (unique among Entry/Exit pairs)
+        @param function_id: the name of the function for this node
+        @param timestamp: the time that this function is called
+        @param variant: either entry/exit/annotation
+        """
         self.variant = variant
 
         TraceNode.__init__(self, id, function_id, timestamp)
 
     def Name(self):
+        """
+        Returns the name corresponding to this node (function_id + variant)
+        """
         return '{} {}'.format(self.function_id, self.variant)
 
 
 
 class OpenStackEdge(TraceEdge):
     def __init__(self, source, destination, duration, variant):
+        """
+        Edge data structure for the OpenStack traces. Has variant type compared
+        to inherited class TraceEdge.
+        @param source: source node (OpenStackNode)
+        @param destination: destination node (OpenStackNode)
+        @param duration: difference in timestamps between destination and source
+        @param variant: type of edge in the trace
+        """
         self.variant = variant
 
         TraceEdge.__init__(self, source, destination, duration)
