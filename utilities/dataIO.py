@@ -35,8 +35,11 @@ def ReadTestingFilenames(dataset, request_type):
 
 
 
-def ReadFilenames(dataset):
-    return glob.glob('traces/{}/*trace'.format(dataset))
+def ReadFilenames(dataset, request_type=None):
+    if request_type == None:
+        return glob.glob('traces/{}/*trace'.format(dataset))
+    else:
+        return ReadTrainValFilenames(dataset, request_type) + ReadTestingFilenames(dataset, request_type)
 
 
 
