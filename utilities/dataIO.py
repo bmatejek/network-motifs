@@ -10,32 +10,102 @@ from network_motifs.motifs.motif import Motif, Motifs
 
 
 def ReadTrainingFilenames(dataset, request_type):
+    """
+    Returns the training filenames for this dataset/request type.
+    @param dataset: the trace dataset
+    @param request_type: which request type to return for this dataset
+    """
     training_list_filename = 'traces/{}/{}-training-traces.txt'.format(dataset, request_type)
     with open(training_list_filename, 'r') as fd:
         return fd.read().splitlines()
 
 
 
+def ReadTrainingTraces(dataset, request_type):
+    """
+    Returns the training traces for this dataset/request type.
+    @param dataset: the trace dataset
+    @param request_type: which request type to return for this dataset
+    """
+    training_filenames = ReadTrainingFilenames(dataset, request_type)
+    return ReadTraces(dataset, training_filenames)
+
+
+
 def ReadValidationFilenames(dataset, request_type):
+    """
+    Returns the validation filenames for this dataset/request type.
+    @param dataset: the trace dataset
+    @param request_type: which request type to return for this dataset
+    """
     validation_list_filename = 'traces/{}/{}-validation-traces.txt'.format(dataset, request_type)
     with open(validation_list_filename, 'r') as fd:
         return fd.read().splitlines()
 
 
 
+def ReadValidationTraces(dataset, request_type):
+    """
+    Returns the validation traces for this dataset/request type.
+    @param dataset: the trace dataset
+    @param request_type: which request type to return for this dataset
+    """
+    validation_filenames = ReadValidationFilenames(dataset, request_type)
+    return ReadTraces(dataset, validation_filenames)
+
+
+
 def ReadTrainValFilenames(dataset, request_type):
+    """
+    Returns the training and validation filenames for this dataset/request type.
+    @param dataset: the trace dataset
+    @param request_type: which request type to return for this dataset
+    """
     return ReadTrainingFilenames(dataset, request_type) + ReadValidationFilenames(dataset, request_type)
 
 
 
+def ReadTrainValTraces(dataset, request_type):
+    """
+    Returns the training and validation traces for this dataset/request type.
+    @param dataset: the trace dataset
+    @param request_type: which request type to return for this dataset
+    """
+    train_val_filenames = ReadTrainValFilenames(dataset, request_type)
+    return ReadTraces(dataset, train_val_filenames)
+
+
+
 def ReadTestingFilenames(dataset, request_type):
+    """
+    Returns the testing filenames for this dataset/request type.
+    @param dataset: the trace dataset
+    @param request_type: which request type to return for this dataset
+    """
     testing_list_filename = 'traces/{}/{}-testing-traces.txt'.format(dataset, request_type)
     with open(testing_list_filename, 'r') as fd:
         return fd.read().splitlines()
 
 
 
+def ReadTestingTraces(dataset, request_type):
+    """
+    Returns the testing traces for this dataset/request type.
+    @param dataset: the trace dataset
+    @param request_type: which request type to return for this dataset
+    """
+    testing_filenames = ReadTestingFilenames(dataset, request_type)
+    return ReadTraces(dataset, testing_filenames)
+
+
+
 def ReadFilenames(dataset, request_type=None):
+    """
+    Returns all filenames for this dataset/request type. If request type is None,
+    all filenames are returned.
+    @param dataset: the trace dataset
+    @param request_type: which request type to return for this dataset
+    """
     if request_type == None:
         return glob.glob('traces/{}/*trace'.format(dataset))
     else:
@@ -44,13 +114,35 @@ def ReadFilenames(dataset, request_type=None):
 
 
 def ReadTrace(dataset, trace_filename):
+    """
+    Returns the trace for this dataset in the trace_filename
+    @param dataset: the trace dataset
+    @param trace_filename: location of filename with this trace (binary .trace)
+    """
     if dataset == 'openstack': return ReadOpenStackTrace(trace_filename)
     elif dataset == 'xtrace': return ReadXTrace(trace_filename)
     else: assert (False)
 
 
 
+def ReadTraces(dataset, trace_filenames):
+    """
+    Returns the traces for this dataset in the list of trace filenames
+    @param dataset: the trace dataset
+    @param trace_filenames: location of filenames for these trace (binary .trace)
+    """
+    traces = []
+    for trace_filename in trace_filenames:
+        traces.append(ReadTrace(dataset, trace_filename))
+    return traces
+
+
+
 def ReadOpenStackTrace(trace_filename):
+    """
+    Returns the trace for this OpenStack dataset.
+    @param trace_filename: location of file to read into OpenStackTrace object
+    """
     # maximum size for strings
     max_bytes = 48
     max_function_bytes = 196
@@ -107,6 +199,10 @@ def ReadOpenStackTrace(trace_filename):
 
 
 def ReadXTrace(trace_filename):
+    """
+    Returns the trace for this XTrace dataset.
+    @param trace_filename: location of file to read into XTrace object
+    """
     # maximum size for strings
     max_bytes = 32
     max_function_bytes = 64
@@ -160,6 +256,12 @@ def ReadXTrace(trace_filename):
 
 
 def ReadMotifs(dataset, trace, pruned):
+    """
+    Return all motifs for this trace from the dataset.
+    @param dataset: dataset for this trace
+    @param trace: the trace that we have mined motifs
+    @param pruned: binary variable of whether motifs can overlap or not
+    """
     # motif saved location
     if pruned: motif_filename = 'motifs/{}/{}-pruned.motifs'.format(dataset, trace.base_id)
     else: motif_filename = 'motifs/{}/{}-queried.motifs'.format(dataset, trace.base_id)
