@@ -65,11 +65,6 @@ class Trace(object):
                 # add to the end of the list
                 current_nodes.append(child_node)
 
-
-
-
-
-
         # order the nodes
         self.ordered_nodes = sorted(self.nodes, key=lambda x: (x.timestamp, x.index, x.function_id))
 
@@ -168,6 +163,8 @@ class TraceNodeSequence(object):
         self.nodes = []
         self.nodes.append(root_node)
         self.index = index
+        # initialize the duration to be 0, updated when adding nodes
+        self.duration = 0
 
     def AddNode(self, node):
         """
@@ -178,9 +175,20 @@ class TraceNodeSequence(object):
         """
         assert (len(node.parent_nodes) == 1)
         assert (self.nodes[-1] == node.parent_nodes[0])
+        assert (self.nodes[-1].timestamp <= node.timestamp)
         self.nodes.append(node)
+        self.duration = self.nodes[-1].timestamp - self.nodes[0].timestamp
 
+    def SequenceTuple(self):
+        """
+        Generate a tuple for the sequence so that sequences can be compared.
+        Returns the sequence of nodes as a tuple.
+        """
+        sequence = ()
+        for node in self.nodes:
+            sequence = sequence + (node.Name(), )
 
+        return sequence
 
 
 
