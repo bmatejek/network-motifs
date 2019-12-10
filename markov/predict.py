@@ -7,7 +7,6 @@ def ToOrdinal(value):
     Convert a numerical value into an ordinal number.
     @param value: the number to be converted
     """
-
     if value % 100//10 != 1:
         if value % 10 == 1:
             ordval = '{}st'.format(value)
@@ -29,7 +28,6 @@ def GenerateTransitionMatrix(counts):
     Convert a countr matrix into a probability transition matrix.
     @param counts: for each key, how many times is the future node seen
     """
-
     transitions = {}
 
     for key in counts:
@@ -61,7 +59,6 @@ def TrainMarkovChain(training_traces, max_order, k = 1):
     @param max_order: the maximum number of nodes to look at in the past
     @param k: the number of nodes in the future to predict
     """
-
     # parameter verification
     assert (len(training_traces))
     assert (max_order > 0)
@@ -114,7 +111,6 @@ def TestMarkovChain(traces, transitions, max_order, k = 1, print_verbose = False
     @param k: the number of nodes in the future to predict
     @param: print_verbose: print out the results for each node
     """
-
     # create counts for the correct/incorrect for each order markov chain
     ncorrect_transitions = [0 for _ in range(max_order)]
     nincorrect_transitions = [0 for _ in range(max_order)]
