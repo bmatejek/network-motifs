@@ -1,6 +1,7 @@
 import os
 import glob
 import json
+import time
 
 
 
@@ -10,6 +11,9 @@ def PruneXTraceJSONFiles(request_types):
     others that do not correspond to the various request types
     @params request_types: the allowable request types for this set of traces.
     """
+    # start statistics
+    start_time = time.time()
+
     # expect the xtrace files to be in this directory
     xtrace_filenames = sorted(glob.glob('jsons/xtrace/*.json'))
 
@@ -54,4 +58,7 @@ def PruneXTraceJSONFiles(request_types):
 
             traces_per_request_type[request_type] += 1
 
-    print (traces_per_request_type)
+    print ('Pruned XTrace files in {:0.2f} seconds.'.format(time.time() - start_time))
+
+    for request_type in traces_per_request_type:
+        print (' {}: {}'.format(request_type, traces_per_request_type[request_type]))
