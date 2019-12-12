@@ -253,9 +253,8 @@ def GetUniqueFunctions(traces):
 
 def GetUniqueNames(dataset):
     """
-    Returns names, name_to_index, and index_to_name, corresponding to
-    the unique names of functions in this dataset, a mapping from the name to
-    an index, and the mapping from the index to the name.
+    Returns a mapping from a unique name in the dataset to an id.
+    @param dataset: the dataset for these unique names
     """
     mapping_filename = 'mappings/{}/name-to-index.txt'.format(dataset)
 
@@ -270,4 +269,34 @@ def GetUniqueNames(dataset):
         name_to_index[name] = iv
         index_to_name[iv] = name
 
-    return names, name_to_index, index_to_name
+    return name_to_index
+
+
+
+def GetUniqueNodeSequences(dataset, fuzzy=False):
+    """
+    Returns a mapping from a unique sequence in the dataset to an id.
+    @params dataset: the dataset for these unique names
+    @params fuzzy: allow fuzzy sequences or not for this dataset
+    """
+    # read the input file from disk
+    if fuzzy: input_filename = 'mappings/{}/fuzzy-node-sequence-to-index.txt'.format(dataset)
+    else: input_filename = 'mappings/{}/hard-node-sequence-to-index.txt'.format(dataset)
+
+    sequence_to_index = {}
+
+    # read the sequence mapping file
+    with open(input_filename, 'r') as fd:
+        nsequences = int(fd.readline().strip())
+        # go through all sequences
+        for _ in range(nsequences):
+            sequence_length = int(fd.readline().strip())
+            sequence = ()
+            # read in all the nodes in the sequence
+            for _ in range(sequence_length):
+                sequence = sequence + (fd.readline().strip(),)
+            # create the mapping 
+            sequence_id = int(fd.readline().strip())
+            sequence_to_index[sequence] = sequence_id
+
+    return sequence_to_index
