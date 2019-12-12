@@ -1,3 +1,7 @@
+import os
+
+
+
 import matplotlib.pyplot as plt
 
 # set the style for plots
@@ -7,11 +11,25 @@ plt.rc({'fontname', 'Ubuntu'})
 
 
 from network_motifs.data_structures.trace import GetUniqueFunctions
-from network_motifs.utilities.constants import *
+from network_motifs.utilities.constants import human_readable, request_types_per_dataset
 
 
 
 def VisualizeDistribution(dataset, distribution, title, filename):
+    """
+    Use matplotlib to plot the distribution for this dataset and save to
+    a distribution folder.
+    @params dataset: dataset from which the distribution comes
+    @params distribution: the actual distribution to plot
+    @params title: the title of the matplotlib figure
+    @params filename: the filename sans directory to save this distribution
+    """
+    # create the output directory if it doesn't exist
+    if not os.path.exists('distributions'):
+        os.mkdir('distributions')
+    if not os.path.exists('distributions/{}'.format(dataset)):
+        os.mkdir('distributions/{}'.format(dataset))
+
     # determine the appropriate units for this distribution
     max_duration = max(distribution)
     if max_duration > 10**8:
@@ -22,7 +40,7 @@ def VisualizeDistribution(dataset, distribution, title, filename):
         units = 'microseconds'
 
     # plot the figure
-    plt.figure(figsize=(4, 4))
+    plt.figure(figsize=(6, 4))
 
     # write the labels for this set of functions
     plt.title(title, pad=20, fontsize=14)
@@ -44,6 +62,12 @@ def VisualizeDistribution(dataset, distribution, title, filename):
 
 
 def FunctionDistribution(dataset, traces):
+    """
+    Plot function distributions for the dataset given the traces. Traces
+    should contain all of the request types.
+    @params dataset: dataset corresponding to all of the traces
+    @params traces: the actual traces for the dataset to get distributions from
+    """
     # not implemented for xtrace
     assert (not dataset == 'xtrace')
 
@@ -100,6 +124,12 @@ def FunctionDistribution(dataset, traces):
 
 
 def RequestTypesDistribution(dataset, traces):
+    """
+    Plot request type distributions for the dataset given the traces.
+    Traces should contain all of the request types.
+    @params dataset: dataset corresponding to all of the traces
+    @params traces: the actual traces for the dataset to get distributions from
+    """
     trace_request_types = request_types_per_dataset[dataset]
 
     # begin to keep track of the distributions
