@@ -5,7 +5,7 @@ import struct
 
 from network_motifs.data_structures.open_stack import OpenStackTrace, OpenStackNode, OpenStackEdge
 from network_motifs.data_structures.xtrace import XTrace, XTraceNode, XTraceEdge
-from network_motifs.motifs.motif import Motif, Motifs
+#from network_motifs.motifs.motif import Motif, Motifs
 
 
 
@@ -125,12 +125,16 @@ def ReadTrace(dataset, trace_filename):
 
 
 
-def ReadTraces(dataset, trace_filenames):
+def ReadTraces(dataset, trace_filenames=None):
     """
     Returns the traces for this dataset in the list of trace filenames
     @param dataset: the trace dataset
     @param trace_filenames: location of filenames for these trace (binary .trace)
     """
+    # read all traces if no filenames are given
+    if trace_filenames == None:
+        trace_filenames = ReadFilenames(dataset)
+
     traces = []
     for trace_filename in trace_filenames:
         traces.append(ReadTrace(dataset, trace_filename))
@@ -255,32 +259,32 @@ def ReadXTrace(trace_filename):
 
 
 
-def ReadMotifs(dataset, trace, pruned):
-    """
-    Return all motifs for this trace from the dataset.
-    @param dataset: dataset for this trace
-    @param trace: the trace that we have mined motifs
-    @param pruned: binary variable of whether motifs can overlap or not
-    """
-    # motif saved location
-    if pruned: motif_filename = 'motifs/{}/{}-pruned.motifs'.format(dataset, trace.base_id)
-    else: motif_filename = 'motifs/{}/{}-queried.motifs'.format(dataset, trace.base_id)
-
-    with open(motif_filename, 'rb') as fd:
-        nmotifs, = struct.unpack('i', fd.read(4))
-        motifs = []
-
-        # read all of the motifs from file
-        for iv in range(nmotifs):
-            motif_size, = struct.unpack('i', fd.read(4))
-            # get the motif in question
-            motif = ()
-            for im in range(motif_size):
-                element, = struct.unpack('i', fd.read(4))
-                motif = motif + (element,)
-            start_index, end_index, duration, = struct.unpack('iiq', fd.read(16))
-
-            motifs.append(Motif(motif, start_index, end_index, duration))
-
-        # create new motif object which sorts by end index
-        return Motifs(dataset, trace, motifs)
+# def ReadMotifs(dataset, trace, pruned):
+#     """
+#     Return all motifs for this trace from the dataset.
+#     @param dataset: dataset for this trace
+#     @param trace: the trace that we have mined motifs
+#     @param pruned: binary variable of whether motifs can overlap or not
+#     """
+#     # motif saved location
+#     if pruned: motif_filename = 'motifs/{}/{}-pruned.motifs'.format(dataset, trace.base_id)
+#     else: motif_filename = 'motifs/{}/{}-queried.motifs'.format(dataset, trace.base_id)
+#
+#     with open(motif_filename, 'rb') as fd:
+#         nmotifs, = struct.unpack('i', fd.read(4))
+#         motifs = []
+#
+#         # read all of the motifs from file
+#         for iv in range(nmotifs):
+#             motif_size, = struct.unpack('i', fd.read(4))
+#             # get the motif in question
+#             motif = ()
+#             for im in range(motif_size):
+#                 element, = struct.unpack('i', fd.read(4))
+#                 motif = motif + (element,)
+#             start_index, end_index, duration, = struct.unpack('iiq', fd.read(16))
+#
+#             motifs.append(Motif(motif, start_index, end_index, duration))
+#
+#         # create new motif object which sorts by end index
+#         return Motifs(dataset, trace, motifs)

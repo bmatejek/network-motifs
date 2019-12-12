@@ -22,9 +22,8 @@ def SplitTracesIntoTrainTest(dataset):
     start_time = time.time()
 
     # read in the traces regardless of request type
-    trace_filenames = dataIO.ReadFilenames(dataset)
-    traces = dataIO.ReadTraces(dataset, trace_filenames)
-    
+    traces = dataIO.ReadTraces(dataset)
+
     request_types = request_types_per_dataset[dataset]
 
     # there are three different request_types for this set of traces
