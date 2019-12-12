@@ -1,3 +1,4 @@
+import os
 import random
 
 
@@ -18,6 +19,11 @@ def VisualizeGraphFromTrace(dataset, trace):
     @param dataset: the dataset name that the trace belongs to
     @param trace: the trace for which to construct a graph
     """
+    if not os.path.exists('dots'):
+        os.mkdir('dots')
+    if not os.path.exists('dots/{}'.format(dataset)):
+        os.mkdir('dots/{}'.format(dataset))
+
     graph = ConstructGraphFromTrace(trace)
 
     # create a mapping between sequences and colors
