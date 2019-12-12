@@ -136,7 +136,7 @@ def ReadXTraceJSONTrace(json_filename):
     # open the JSON file
     with open(json_filename, 'r') as fd:
         data = json.load(fd)
-    
+
     # verify the json file follows the expected format
     VerifyKeys(data, ['id', 'reports'])
 
@@ -253,7 +253,7 @@ def ConvertTrace2GramiGraph(dataset, request_type, traces):
     @params traces: all of the traces for this dataset request type combo
     """
     # read the mapping from nodes to indices
-    _, name_to_index, _ = GetUniqueNames(dataset)
+    name_to_index = GetUniqueNames(dataset)
 
     # create the grami file
     grami_filename = 'graphs/{}/{}-grami.lg'.format(dataset, request_type)
@@ -300,7 +300,7 @@ def ConvertTrace2GastonGraph(dataset, request_type, traces):
     @params traces: all of the traces for this dataset request type combo
     """
     # read the mapping from nodes to indices
-    _, name_to_index, _ = GetUniqueNames(dataset)
+    name_to_index = GetUniqueNames(dataset)
 
     # create the gaston file
     gaston_filename = 'graphs/{}/{}-gaston.lg'.format(dataset, request_type)
@@ -331,14 +331,14 @@ def ConvertTrace2Graph(dataset):
     Convert the traces for this dataset into formats for both GraMi and Gaston
     @params dataset: the type of trace to convert into motif discovery formats
     """
+    # start statistics
+    start_time = time.time()
+
     # make sure the output directory exists
     if not os.path.exists('graphs'):
         os.mkdir('graphs')
     if not os.path.exists('graphs/{}'.format(dataset)):
         os.mkdir('graphs/{}'.format(dataset))
-
-    # start statistics
-    start_time = time.time()
 
     # get all of the request types for this dataset
     for request_type in request_types_per_dataset[dataset]:
