@@ -1,18 +1,31 @@
 import os
+import time
 import random
 
 
 
-from network_motifs.utilities.constants import request_types_by_dataset
+from network_motifs.utilities import dataIO
+from network_motifs.utilities.constants import request_types_per_dataset
 
 
 
-def SplitTraces(dataset, traces):
+def SplitTracesIntoTrainTest(dataset):
+    """
+    Split the traces into three datasets (train, validation, and test).
+    @params dataset: dataset to split into multiple subsets
+    """
     # do not allow any more splits
     # currently we assume all functions occur in trainval and testing
-    assert (False)
+    #assert (False)
 
-    request_types = request_types_by_dataset[dataset]
+    # start statistics
+    start_time = time.time()
+
+    # read in the traces regardless of request type
+    trace_filenames = dataIO.ReadFilenames(dataset)
+    traces = dataIO.ReadTraces(dataset, trace_filenames)
+    
+    request_types = request_types_per_dataset[dataset]
 
     # there are three different request_types for this set of traces
     traces_by_request_types = {}
@@ -64,3 +77,6 @@ def SplitTraces(dataset, traces):
     assert (set(training_filenames).isdisjoint(set(testing_filenames)))
     assert (set(training_filenames).isdisjoint(set(validation_filenames)))
     assert (set(validation_filenames).isdisjoint(set(testing_filenames)))
+
+    # print statistics
+    print ('Split {} in {:0.2f} seconds.'.format(dataset, time.time() - start_time))
