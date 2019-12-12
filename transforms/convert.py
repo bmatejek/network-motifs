@@ -1,3 +1,4 @@
+import os
 import json
 import glob
 import time
@@ -135,7 +136,7 @@ def ReadXTraceJSONTrace(json_filename):
     # open the JSON file
     with open(json_filename, 'r') as fd:
         data = json.load(fd)
-
+    
     # verify the json file follows the expected format
     VerifyKeys(data, ['id', 'reports'])
 
@@ -197,6 +198,10 @@ def ReadXTraceJSONTrace(json_filename):
     # convert the edge list into TraceEdges to construct a Trace object
     edges = []
     for edge in edge_list:
+        # skip edges where the parent id does not exist
+        if not edge[0] in id_to_node: continue
+
+        # get the parent and child node
         parent_node = id_to_node[edge[0]]
         child_node = id_to_node[edge[1]]
 
@@ -222,6 +227,12 @@ def ConvertJSON2Trace(dataset):
     Convert all of the JSON traces in the dataset into the .trace file type
     @params dataset: the type of trace to convert
     """
+    # make sure the output directory exists
+    if not os.path.exists('traces'):
+        os.mkdir('traces')
+    if not os.path.exists('traces/{}'.format(dataset)):
+        os.mkdir('traces/{}'.format(dataset))
+
     # start statistics
     start_time = time.time()
 
@@ -320,6 +331,15 @@ def ConvertTrace2Graph(dataset):
     Convert the traces for this dataset into formats for both GraMi and Gaston
     @params dataset: the type of trace to convert into motif discovery formats
     """
+    # make sure the output directory exists
+    if not os.path.exists('graphs'):
+        os.mkdir('graphs')
+    if not os.path.exists('graphs/{}'.format(dataset)):
+        os.mkdir('graphs/{}'.format(dataset))
+
+    # start statistics
+    start_time = time.time()
+
     # get all of the request types for this dataset
     for request_type in request_types_per_dataset[dataset]:
         print ('{} {}'.format(dataset, request_type))
@@ -329,3 +349,5 @@ def ConvertTrace2Graph(dataset):
 
         ConvertTrace2GramiGraph(dataset, request_type, traces)
         ConvertTrace2GastonGraph(dataset, request_type, traces)
+
+    print ('Converted trace files to graph for {} in {:0.2f} seconds.'.format(dataset, time.time() - start_time))
