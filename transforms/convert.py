@@ -256,7 +256,7 @@ def ConvertTrace2GastonGraph(dataset, request_type, traces):
     name_to_index = GetUniqueNames(dataset)
 
     # create the gaston file
-    gaston_filename = 'graphs/{}/{}-gaston.lg'.format(dataset, request_type)
+    gaston_filename = 'graphs/{}/{}-gaston.txt'.format(dataset, request_type)
     with open(gaston_filename, 'w') as fd:
         # go through each trace and add the node and edges to the file
         for trace_index, trace in enumerate(traces):
