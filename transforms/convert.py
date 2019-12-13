@@ -245,53 +245,6 @@ def ConvertJSON2Trace(dataset):
 
 
 
-def ConvertTrace2GramiGraph(dataset, request_type, traces):
-    """
-    Convert the trace into a grami graph where nodes stack on each other.
-    @params dataset: the dataset that the traces come from
-    @params request_type: the request type for this particular set of traces
-    @params traces: all of the traces for this dataset request type combo
-    """
-    # read the mapping from nodes to indices
-    name_to_index = GetUniqueNames(dataset)
-
-    # create the grami file
-    grami_filename = 'graphs/{}/{}-grami.lg'.format(dataset, request_type)
-    with open(grami_filename, 'w') as fd:
-        # write the transaction id first
-        fd.write('# t 1\n')
-
-        # mapping from (trace, node) to index
-        node_mapping = {}
-        node_index = 0
-        # go through each trace and add the node to the file
-        for trace in traces:
-            # go through each node in this trace
-            for node in trace.nodes:
-                # check to make sure each node is unique
-                assert (not node in node_mapping)
-                node_mapping[node] = node_index
-                name_index = name_to_index[node.Name()]
-
-                fd.write('v {:07d} {:04d}\n'.format(node_index, name_index))
-
-                node_index += 1
-
-        # write all of the edges in the file
-        for trace in traces:
-            # go through each edge in the trace
-            for edge in trace.edges:
-                # get the source and destination for this node
-                source = edge.source
-                destination = edge.destination
-
-                source_index = node_mapping[source]
-                destination_index = node_mapping[destination]
-
-                fd.write('e {:07d} {:07d}\n'.format(source_index, destination_index))
-
-
-
 def ConvertTrace2GastonGraph(dataset, request_type, traces):
     """
     Convert the trace into a gaston graph where nodes stack on each other.
@@ -314,6 +267,7 @@ def ConvertTrace2GastonGraph(dataset, request_type, traces):
                 # check to make sure each node is unique
                 name_index = name_to_index[node.Name()]
 
+                #fd.write('v {:07d} {:04d}\n'.format(node.index, name_index))
                 fd.write('v {:07d} {:04d}\n'.format(node.index, name_index))
 
             # go through each edge in the trace
@@ -322,7 +276,7 @@ def ConvertTrace2GastonGraph(dataset, request_type, traces):
                 source_index = edge.source.index
                 destination_index = edge.destination.index
 
-                fd.write('e {:07d} {:07d}\n'.format(source_index, destination_index))
+                fd.write('e {:07d} {:07d} 0\n'.format(source_index, destination_index))
 
 
 
@@ -342,12 +296,10 @@ def ConvertTrace2Graph(dataset):
 
     # get all of the request types for this dataset
     for request_type in request_types_per_dataset[dataset]:
-        print ('{} {}'.format(dataset, request_type))
         # read all the traces from this dataset
         trace_filenames = ReadFilenames(dataset, request_type)
         traces = ReadTraces(dataset, trace_filenames)
 
-        ConvertTrace2GramiGraph(dataset, request_type, traces)
         ConvertTrace2GastonGraph(dataset, request_type, traces)
 
     print ('Converted trace files to graph for {} in {:0.2f} seconds.'.format(dataset, time.time() - start_time))
