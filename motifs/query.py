@@ -1,6 +1,5 @@
 import os
 import time
-import struct
 
 
 
@@ -9,7 +8,7 @@ import graph_tool.all as gt
 
 
 from network_motifs.transforms.convert import ConvertTrace2GraphTool, ConvertSubGraph2GraphTool, ConvertCollapsedGraph2GraphTool
-from network_motifs.motifs.motif import Motif, SubGraph
+from network_motifs.motifs.motif import Motif, SubGraph, WriteMotifs
 from network_motifs.utilities.dataIO import ReadTraces
 
 
@@ -73,24 +72,6 @@ def MotifStatistics(motifs):
 
     for motif in motifs:
         nnodes_per_motifs.append(len(motif.nodes))
-
-
-
-def WriteMotifs(filename, motifs):
-    """
-    Write all of the found motifs for this trace to file.
-    @params filename: the file to store the motifs
-    @params motifs: a list of motif objects to save to disk
-    """
-    with open(filename, 'wb') as fd:
-        nmotifs = len(motifs)
-        fd.write(struct.pack('q', nmotifs))
-        for motif in motifs:
-            nnodes = len(motif.nodes)
-            fd.write(struct.pack('q', nnodes))
-            for node in motif.nodes:
-                fd.write(struct.pack('q', node.index))
-            fd.write(struct.pack('q', motif.motif_index))
 
 
 
@@ -186,9 +167,10 @@ def QueryCollapsedGraphs(dataset, request_type, fuzzy):
             for vertex_map in vertex_maps:
                 nodes = []
                 # add all of the nodes that belong to each vertex (collapsed nodes)
-                for node in reduced_nodes_to_nodes[vertex_map]:
-                    assert (not trace.nodes[node] in nodes)
-                    nodes.append(trace.nodes[node])
+                for reduced_node in vertex_map:
+                    for node in reduced_nodes_to_nodes[reduced_node]:
+                        assert (not trace.nodes[node] in nodes)
+                        nodes.append(trace.nodes[node])
 
                 motifs.append(Motif(trace, nodes, motif_index))
 

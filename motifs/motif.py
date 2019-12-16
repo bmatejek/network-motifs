@@ -1,3 +1,7 @@
+import struct 
+
+
+
 class SubGraph(object):
     def __init__(self, vertices, edges):
         self.vertices = vertices
@@ -29,3 +33,40 @@ class Motif(object):
 
         # get the duration for this motif
         self.duration = self.maximum_timestamp - self.minimum_timestamp
+
+    def __lt__(self, other):
+        """
+        Custom operator to sort motifs first by the size of the motif and
+        second by the start of the motif.
+        @params other: the other motif to compare to
+        """
+        # this motif is larger than the other
+        if len(self.nodes) < len(other.nodes): return True
+        elif len(self.nodes) > len(other.nodes): return False
+        # or it has a later timestamp
+        elif self.minimum_timestamp > other.minimum_timestamp: return True
+        else: return False
+
+    def size(self):
+        """
+        Return the size of this motif based only on the number of nodes
+        """
+        return len(self.nodes)
+
+
+
+def WriteMotifs(filename, motifs):
+    """
+    Write all of the found motifs for this trace to file.
+    @params filename: the file to store the motifs
+    @params motifs: a list of motif objects to save to disk
+    """
+    with open(filename, 'wb') as fd:
+        nmotifs = len(motifs)
+        fd.write(struct.pack('q', nmotifs))
+        for motif in motifs:
+            nnodes = len(motif.nodes)
+            fd.write(struct.pack('q', nnodes))
+            for node in motif.nodes:
+                fd.write(struct.pack('q', node.index))
+            fd.write(struct.pack('q', motif.motif_index))
