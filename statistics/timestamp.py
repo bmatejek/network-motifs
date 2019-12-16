@@ -61,13 +61,13 @@ def VisualizeDistribution(dataset, distribution, title, filename):
 
 
 
-def FunctionDistribution(dataset, traces):
+def FunctionDistribution(traces):
     """
     Plot function distributions for the dataset given the traces. Traces
     should contain all of the request types.
-    @params dataset: dataset corresponding to all of the traces
     @params traces: the actual traces for the dataset to get distributions from
     """
+    dataset = traces[0].dataset
     # not implemented for xtrace
     assert (not dataset == 'xtrace')
 
@@ -123,13 +123,13 @@ def FunctionDistribution(dataset, traces):
 
 
 
-def RequestTypesDistribution(dataset, traces):
+def RequestTypesDistribution(traces):
     """
     Plot request type distributions for the dataset given the traces.
     Traces should contain all of the request types.
-    @params dataset: dataset corresponding to all of the traces
     @params traces: the actual traces for the dataset to get distributions from
     """
+    dataset = traces[0].dataset
     trace_request_types = request_types_per_dataset[dataset]
 
     # begin to keep track of the distributions
