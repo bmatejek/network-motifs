@@ -14,15 +14,11 @@ def SplitTracesIntoTrainTest(dataset):
     Split the traces into three datasets (train, validation, and test).
     @params dataset: dataset to split into multiple subsets
     """
-    # do not allow any more splits
-    # currently we assume all functions occur in trainval and testing
-    #assert (False)
-
     # start statistics
     start_time = time.time()
 
     # read in the traces regardless of request type
-    traces = dataIO.ReadTraces(dataset)
+    traces = dataIO.ReadTraces(dataset, None, None)
 
     request_types = request_types_per_dataset[dataset]
 

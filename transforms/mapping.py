@@ -26,15 +26,13 @@ def CreateNameMapping(dataset):
     if not os.path.exists('mappings/{}'.format(dataset)):
         os.mkdir('mappings/{}'.format(dataset))
 
-    filenames = dataIO.ReadFilenames(dataset)
+    traces = dataIO.ReadTraces(dataset, None, None)
 
     # create a set of all possible function names
     names = set()
 
     # go through all files in this dataset
-    for filename in filenames:
-        trace = dataIO.ReadTrace(dataset, filename)
-
+    for trace in traces:
         names = names | trace.UniqueNames()
 
     names = sorted(list(names))
@@ -59,6 +57,10 @@ def CreateHardNodeSequenceMapping(dataset):
     """
     # start statistics
     start_time = time.time()
+
+    # how many names are there and start the mapping at that index
+    names_to_index = GetUniqueNames(dataset)
+    nnames = len(names_to_index)
 
     # create the directories for the mappings
     if not os.path.exists('mappings'):
@@ -91,7 +93,7 @@ def CreateHardNodeSequenceMapping(dataset):
             fd.write('{}\n'.format(sequence_length))
             for node in sequence:
                 fd.write('{}\n'.format(node))
-            fd.write('{}\n'.format(iv))
+            fd.write('{}\n'.format(iv + nnames))
 
     # print statistics
     print ('Created hard sequence name mappings for {} in {:0.2f} seconds.'.format(dataset, time.time() - start_time))
@@ -124,6 +126,12 @@ def CreateFuzzyNodeSequenceMapping(dataset):
     # start statistics
     start_time = time.time()
 
+    # currently only works if each node can become a character
+    names_to_index = GetUniqueNames(dataset)
+    assert (len(names_to_index) < 1024)
+    # how many names are there and start the mapping at that index
+    nnames = len(names_to_index)
+
     # create the directories for the mappings
     if not os.path.exists('mappings'):
         os.mkdir('mappings')
@@ -147,11 +155,7 @@ def CreateFuzzyNodeSequenceMapping(dataset):
     nsequences = len(sequences)
 
     # create a union find data structure
-    union_find = [UnionFindElement(iv) for iv in range(nsequences)]
-
-    # currently only works if each node can become a character
-    names_to_index = GetUniqueNames(dataset)
-    assert (len(names_to_index) < 1024)
+    union_find = [UnionFindElement(iv + nnames) for iv in range(nsequences)]
 
     # go through all pairs of sequences
     for is1 in range(nsequences):
@@ -180,7 +184,7 @@ def CreateFuzzyNodeSequenceMapping(dataset):
             fd.write('{}\n'.format(sequence_length))
             for node in sequence:
                 fd.write('{}\n'.format(node))
-            fd.write('{}\n'.format(union_find[iv].label))
+            fd.write('{}\n'.format(Find(union_find[iv]).label))
 
     # print statistics
     print ('Created fuzzy sequence name mappings for {} in {:0.2f} seconds.'.format(dataset, time.time() - start_time))

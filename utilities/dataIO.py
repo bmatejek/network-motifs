@@ -124,7 +124,7 @@ def ReadTrace(dataset, trace_filename):
 
 
 
-def ReadTraces(dataset, request_type=None, trace_filenames=None):
+def ReadTraces(dataset, request_type, trace_filenames):
     """
     Returns the traces for this dataset in the list of trace filenames
     @param dataset: the trace dataset
@@ -159,7 +159,7 @@ def ReadOpenStackTrace(trace_filename):
         edges = []
 
         # read the dataset for this trace
-        dataset_bytes, = struct.unpack('%ds' % max_bytes, fd.read(maxx_bytes))
+        dataset_bytes, = struct.unpack('%ds' % max_bytes, fd.read(max_bytes))
         dataset = dataset_bytes.decode().strip('\0')
         # read the request type for this trace
         request_type_bytes, = struct.unpack('%ds' % max_bytes, fd.read(max_bytes))
@@ -222,7 +222,7 @@ def ReadXTrace(trace_filename):
         edges = []
 
         # read the dataset for this trace
-        dataset_bytes, = struct.unpack('%ds' % max_bytes, fd.read(maxx_bytes))
+        dataset_bytes, = struct.unpack('%ds' % max_bytes, fd.read(max_bytes))
         dataset = dataset_bytes.decode().strip('\0')
         # read the request type for this trace
         request_type_bytes, = struct.unpack('%ds' % max_bytes, fd.read(max_bytes))
