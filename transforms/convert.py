@@ -6,6 +6,7 @@ import time
 
 
 import pandas as pd
+import graph_tool.all as gt
 
 
 
@@ -297,9 +298,64 @@ def ConvertTrace2Graph(dataset):
     # get all of the request types for this dataset
     for request_type in request_types_per_dataset[dataset]:
         # read all the traces from this dataset
-        trace_filenames = ReadFilenames(dataset, request_type)
-        traces = ReadTraces(dataset, trace_filenames)
+        traces = ReadTraces(dataset, request_type)
 
         ConvertTrace2GastonGraph(dataset, request_type, traces)
 
     print ('Converted trace files to graph for {} in {:0.2f} seconds.'.format(dataset, time.time() - start_time))
+
+
+
+def ConvertTrace2GraphTool(dataset, trace):
+    """
+    Convert the given trace into an object that can be used for graph tool functions.
+    @params trace: the trace to convert into a graph tool object
+    """
+    graph = gt.Graph(directed=True)
+
+    name_to_index = GetUniqueNames(dataset)
+
+    # create a new property for the vertices
+    labels = graph.new_vertex_property('int')
+
+    for node in trace.nodes:
+        vertex = graph.add_vertex()
+        labels[vertex] = name_to_index[node.Name()]
+
+    # add all of the edges into the graph
+    for edge in trace.edges:
+        source_index = edge.source.index
+        destination_index = edge.destination.index
+        graph.add_edge(source_index, destination_index)
+
+    graph.vertex_properties['label'] = labels
+
+    return graph
+
+
+
+def ConvertSubGraph2GraphTool(subgraph):
+    """
+    Convert the SubGraph from frequent subgraph discovery algorithm into a graph tool object.
+    @params subgraph: the subgraph to convert into a graph tool object
+    """
+    graph = gt.Graph(directed=True)
+
+    # get the attributes for this subgraph
+    vertices = subgraph.vertices
+    edges = subgraph.edges
+
+    # create a new property for the vertices
+    labels = graph.new_vertex_property('int')
+
+    for (_, label) in vertices:
+        vertex = graph.add_vertex()
+        labels[vertex] = label
+
+    # add all of the edges into the graph
+    for (source_index, destination_index) in edges:
+        graph.add_edge(source_index, destination_index)
+
+    graph.vertex_properties['label'] = labels
+    
+    return graph

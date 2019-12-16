@@ -5,7 +5,6 @@ import struct
 
 from network_motifs.data_structures.open_stack import OpenStackTrace, OpenStackNode, OpenStackEdge
 from network_motifs.data_structures.xtrace import XTrace, XTraceNode, XTraceEdge
-#from network_motifs.motifs.motif import Motif, Motifs
 
 
 
@@ -28,7 +27,7 @@ def ReadTrainingTraces(dataset, request_type):
     @param request_type: which request type to return for this dataset
     """
     training_filenames = ReadTrainingFilenames(dataset, request_type)
-    return ReadTraces(dataset, training_filenames)
+    return ReadTraces(dataset, request_type, training_filenames)
 
 
 
@@ -51,7 +50,7 @@ def ReadValidationTraces(dataset, request_type):
     @param request_type: which request type to return for this dataset
     """
     validation_filenames = ReadValidationFilenames(dataset, request_type)
-    return ReadTraces(dataset, validation_filenames)
+    return ReadTraces(dataset, request_type, validation_filenames)
 
 
 
@@ -72,7 +71,7 @@ def ReadTrainValTraces(dataset, request_type):
     @param request_type: which request type to return for this dataset
     """
     train_val_filenames = ReadTrainValFilenames(dataset, request_type)
-    return ReadTraces(dataset, train_val_filenames)
+    return ReadTraces(dataset, request_type, train_val_filenames)
 
 
 
@@ -95,7 +94,7 @@ def ReadTestingTraces(dataset, request_type):
     @param request_type: which request type to return for this dataset
     """
     testing_filenames = ReadTestingFilenames(dataset, request_type)
-    return ReadTraces(dataset, testing_filenames)
+    return ReadTraces(dataset, request_type, testing_filenames)
 
 
 
@@ -125,15 +124,17 @@ def ReadTrace(dataset, trace_filename):
 
 
 
-def ReadTraces(dataset, trace_filenames=None):
+def ReadTraces(dataset, request_type=None, trace_filenames=None):
     """
     Returns the traces for this dataset in the list of trace filenames
     @param dataset: the trace dataset
     @param trace_filenames: location of filenames for these trace (binary .trace)
     """
     # read all traces if no filenames are given
-    if trace_filenames == None:
+    if trace_filenames == None and request_type == None:
         trace_filenames = ReadFilenames(dataset)
+    elif trace_filenames == None and not request_type == None:
+        trace_filenames = ReadFilenames(dataset, request_type)
 
     traces = []
     for trace_filename in trace_filenames:
@@ -256,35 +257,3 @@ def ReadXTrace(trace_filename):
         trace = XTrace(nodes, edges, request_type, request, base_id)
 
         return trace
-
-
-
-# def ReadMotifs(dataset, trace, pruned):
-#     """
-#     Return all motifs for this trace from the dataset.
-#     @param dataset: dataset for this trace
-#     @param trace: the trace that we have mined motifs
-#     @param pruned: binary variable of whether motifs can overlap or not
-#     """
-#     # motif saved location
-#     if pruned: motif_filename = 'motifs/{}/{}-pruned.motifs'.format(dataset, trace.base_id)
-#     else: motif_filename = 'motifs/{}/{}-queried.motifs'.format(dataset, trace.base_id)
-#
-#     with open(motif_filename, 'rb') as fd:
-#         nmotifs, = struct.unpack('i', fd.read(4))
-#         motifs = []
-#
-#         # read all of the motifs from file
-#         for iv in range(nmotifs):
-#             motif_size, = struct.unpack('i', fd.read(4))
-#             # get the motif in question
-#             motif = ()
-#             for im in range(motif_size):
-#                 element, = struct.unpack('i', fd.read(4))
-#                 motif = motif + (element,)
-#             start_index, end_index, duration, = struct.unpack('iiq', fd.read(16))
-#
-#             motifs.append(Motif(motif, start_index, end_index, duration))
-#
-#         # create new motif object which sorts by end index
-#         return Motifs(dataset, trace, motifs)
