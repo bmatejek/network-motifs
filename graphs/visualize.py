@@ -1,4 +1,5 @@
 import os
+import time
 import random
 
 
@@ -11,14 +12,16 @@ from network_motifs.graphs.construct import ConstructGraphFromTrace
 
 
 
-def VisualizeGraphFromTrace(dataset, trace):
+def VisualizeGraphFromTrace(trace):
     """
     Construct a 'dot' file graph for this trace. Each node in the trace gets
     a unique node in the graph with edges indicating parent-child relations.
     Nodes in different node sequences are different colors.
-    @param dataset: the dataset name that the trace belongs to
     @param trace: the trace for which to construct a graph
     """
+    # get the dataset for this trace
+    dataset = trace.dataset
+
     if not os.path.exists('dots'):
         os.mkdir('dots')
     if not os.path.exists('dots/{}'.format(dataset)):
@@ -47,3 +50,40 @@ def VisualizeGraphFromTrace(dataset, trace):
     A = nx.nx_agraph.to_agraph(graph)
     A.layout(prog='dot')
     A.draw('dots/{}/{}.dot'.format(dataset, trace.base_id))
+
+
+
+def VisualizeCollapsedGraph(trace, node_names, edges, fuzzy):
+    """
+    Visualize the collapsed graph and save the output.
+    @params trace: the trace for which to visualize a collapsed graph
+    @params node_names: names for the collapsed nodes
+    @params edges: list of edges connecting the nodes
+    """
+    # get relavent information for output filename
+    dataset = trace.dataset
+    base_id = trace.base_id
+
+    if not os.path.exists('dots'):
+        os.mkdir('dots')
+    if not os.path.exists('dots/{}'.format(dataset)):
+        os.mkdir('dots/{}'.format(dataset))
+
+    # create the digraph
+    graph = nx.DiGraph()
+
+    for index, name in enumerate(node_names):
+        graph.add_node(index, label=name)
+
+    # populate the edges in the graph
+    for (source_index, destination_index) in edges:
+        graph.add_edge(source_index, destination_index)
+
+    # get the output filename for this collapsed graph
+    if fuzzy: output_filename = 'dots/{}/{}-fuzzy-collapsed.dot'.format(dataset, base_id)
+    else: output_filename = 'dots/{}/{}-collapsed.dot'.format(dataset, base_id)
+
+    # save the graph into dot format
+    A = nx.nx_agraph.to_agraph(graph)
+    A.layout('dot')
+    A.draw(output_filename)

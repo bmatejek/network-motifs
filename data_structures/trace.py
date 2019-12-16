@@ -1,3 +1,11 @@
+import os
+
+
+
+import pandas as pd
+
+
+
 class Trace(object):
     def __init__(self, dataset, nodes, edges, request_type, base_id):
         """
@@ -216,6 +224,8 @@ class TraceNodeSequence(object):
         self.index = index
         # initialize the duration to be 0, updated when adding nodes
         self.duration = 0
+        self.minimum_timestamp = root_node.timestamp
+        self.maximum_timestamp = root_node.timestamp
 
     def AddNode(self, node):
         """
@@ -229,6 +239,7 @@ class TraceNodeSequence(object):
         assert (self.nodes[-1].timestamp <= node.timestamp)
         self.nodes.append(node)
         self.duration = self.nodes[-1].timestamp - self.nodes[0].timestamp
+        self.maximum_timestamp = self.nodes[-1].timestamp
 
     def SequenceTuple(self):
         """
@@ -308,20 +319,23 @@ def GetUniqueNodeSequences(dataset, fuzzy=False):
 
 
 
-def CollapseSequences(dataset, trace, fuzzy=False):
+def CollapseSequences(trace, fuzzy=False):
     """
     Collapse the sequences in the graph for faster motif discovery.
-    @params dataset: the dataset that the trace belongs to
     @params trace: the trace to collapse the sequences for
     @params fuzzy: allow fuzzy sequences or not for this dataset
     """
+    # get the dataset for this trace
+    dataset = trace.dataset
+
     # create the mapping to from sequences to names
     sequence_to_index = GetUniqueNodeSequences(dataset, fuzzy)
     name_to_index = GetUniqueNames(dataset)
+    nnames = len(name_to_index)
 
     # create a mapping to nodes to reduce the sequences
     node_mapping = {}
-    print (trace.base_id)
+
     for node in trace.nodes:
         if node.sequence == None:
             node_mapping[node.index] = node.index
@@ -330,15 +344,41 @@ def CollapseSequences(dataset, trace, fuzzy=False):
 
     # create a mapping to a reduced set of nodes
     reduced_node_mapping = {}
-    nodes = []
-    for iv, value in enumerate(sorted(node_mapping.values())):
+    unique_nodes = sorted(pd.unique(list(node_mapping.values())))
+
+    for iv, value in enumerate(unique_nodes):
         reduced_node_mapping[value] = iv
-        # if value < len(name_to_index):
-        #     nodes.append(value)
+        # update the node mappings so no longer need reduced node mapping
+    for key in node_mapping:
+        #print (key)
+        node_mapping[key] = reduced_node_mapping[node_mapping[key]]
+
+    # create the node labels and the node names
+    nnodes = len(reduced_node_mapping)
+
+    node_labels = [0 for _ in range(nnodes)]
+    node_label_names = ['' for _ in range(nnodes)]
+
+    for node in trace.nodes:
+        new_node_index = node_mapping[node.index]
+        #print (new_node_index)
+        sequence = node.sequence
+        if sequence == None:
+            node_label_names[new_node_index] = node.Name()
+            node_labels[new_node_index] = name_to_index[node.Name()]
+        else:
+            # subtract the number of names so sequence indices start at 0
+            node_label_names[new_node_index] = 'Sequence {}'.format(sequence_to_index[sequence.SequenceTuple()] - nnames)
+            node_labels[new_node_index] = sequence_to_index[sequence.SequenceTuple()]
 
     # create a list of edges
     edges = []
     for edge in trace.edges:
-        source_index = reduced_node_mapping[node_mapping[edge.source.index]]
-        destination_index = reduced_node_mapping[node_mapping[edge.destination.index]]
+        source_index = node_mapping[edge.source.index]
+        destination_index = node_mapping[edge.destination.index]
+        # don't include self loops caused by sequences
+        if source_index == destination_index: continue
         edges.append((source_index, destination_index))
+
+    # return the nodes, edges, and various mappings
+    return node_labels, node_label_names, edges

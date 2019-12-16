@@ -11,8 +11,9 @@ import graph_tool.all as gt
 
 
 from network_motifs.data_structures.open_stack import OpenStackTrace, OpenStackNode, OpenStackEdge
-from network_motifs.data_structures.trace import GetUniqueNames
+from network_motifs.data_structures.trace import GetUniqueNames, CollapseSequences
 from network_motifs.data_structures.xtrace import XTrace, XTraceNode, XTraceEdge
+from network_motifs.graphs.visualize import VisualizeCollapsedGraph
 from network_motifs.utilities.dataIO import ReadFilenames, ReadTraces
 from network_motifs.utilities.constants import request_types_per_dataset
 
@@ -298,7 +299,7 @@ def ConvertTrace2Graph(dataset):
     # get all of the request types for this dataset
     for request_type in request_types_per_dataset[dataset]:
         # read all the traces from this dataset
-        traces = ReadTraces(dataset, request_type)
+        traces = ReadTraces(dataset, request_type, None)
 
         ConvertTrace2GastonGraph(dataset, request_type, traces)
 
@@ -359,3 +360,45 @@ def ConvertSubGraph2GraphTool(subgraph):
     graph.vertex_properties['label'] = labels
 
     return graph
+
+
+
+def ConvertCollapsedGraphs2GastonGraph(dataset, fuzzy):
+    """
+    Collapse all of the graphs for this dataset, save a dot file for visualization,
+    and produce a gaston file for motif discovery.
+    @params dataset: the dataset to read the traces and collapse long sequences
+    @params fuzzy: do we allow fuzzy motifs or not
+    """
+    # start statistics
+    start_time = time.time()
+
+    # go through all of the different request types
+    request_types = request_types_per_dataset[dataset]
+    for request_type in request_types:
+        # create the gaston file for motif discovery
+        if fuzzy: gaston_filename = 'graphs/{}/{}-fuzzy-collapsed-gaston.txt'.format(dataset, request_type)
+        else: gaston_filename = 'graphs/{}/{}-collapsed-gaston.txt'.format(dataset, request_type)
+
+        with open(gaston_filename, 'w') as fd:
+            # go through each trace and add the nodes and edges to the file
+            traces = ReadTraces(dataset, request_type, None)
+
+            for trace_index, trace in enumerate(traces):
+                # collapse all of the sequences
+                node_labels, node_label_names, edges = CollapseSequences(trace, fuzzy)
+                fd.write('t # {}\n'.format(trace_index))
+
+                # add all of the nodes
+                for iv, label in enumerate(node_labels):
+                    fd.write('v {:07d} {:04d}\n'.format(iv, label))
+
+                # add all of the edges
+                for (source_index, destination_index) in edges:
+                    fd.write('e {:07d} {:07d} 0\n'.format(source_index, destination_index))
+
+                # visualize the results
+                VisualizeCollapsedGraph(trace, node_label_names, edges, fuzzy)
+
+    # print statistics
+    print ('Converted collapsed graphs for {} in {:0.2f} seconds.'.format(dataset, time.time() - start_time))
