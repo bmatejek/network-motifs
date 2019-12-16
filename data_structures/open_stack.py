@@ -7,15 +7,16 @@ from network_motifs.data_structures.trace import Trace, TraceNode, TraceEdge
 
 
 class OpenStackTrace(Trace):
-    def __init__(self, nodes, edges, request_type, base_id):
+    def __init__(self, dataset, nodes, edges, request_type, base_id):
         """
         Trace data structure for the OpenStack traces.
+        @param dataset: the name of the dataset for this tracing utility
         @param nodes: list of nodes in the trace.
         @param edges: list of edges that connect nodes together.
         @param request_type: corresponding request: ServerCreate, ServerDelete, ServerList
         @param base_id: unique base id for this trace corresponding to node[0] id
         """
-        Trace.__init__(self, nodes, edges, request_type, base_id)
+        Trace.__init__(self, dataset, nodes, edges, request_type, base_id)
 
     def Filename(self):
         """
@@ -33,6 +34,10 @@ class OpenStackTrace(Trace):
         max_function_bytes = 196
 
         with open(self.Filename(), 'wb') as fd:
+            # write the dataset
+            dataset_bytes = self.dataset.encode()
+            assert (len(dataset_bytes) <= max_bytes)
+            fd.write(struct.pack('%ds' % max_bytes, dataset_bytes))
             # write the request type
             request_type_bytes = self.request_type.encode()
             assert (len(request_type_bytes) <= max_bytes)

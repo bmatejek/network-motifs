@@ -158,6 +158,9 @@ def ReadOpenStackTrace(trace_filename):
         nodes = []
         edges = []
 
+        # read the dataset for this trace
+        dataset_bytes, = struct.unpack('%ds' % max_bytes, fd.read(maxx_bytes))
+        dataset = dataset_bytes.decode().strip('\0')
         # read the request type for this trace
         request_type_bytes, = struct.unpack('%ds' % max_bytes, fd.read(max_bytes))
         request_type = request_type_bytes.decode().strip('\0')
@@ -197,7 +200,7 @@ def ReadOpenStackTrace(trace_filename):
             edges.append(edge)
 
         # create new trace object and return
-        trace = OpenStackTrace(nodes, edges, request_type, base_id)
+        trace = OpenStackTrace(dataset, nodes, edges, request_type, base_id)
 
         return trace
 
@@ -218,6 +221,9 @@ def ReadXTrace(trace_filename):
         nodes = []
         edges = []
 
+        # read the dataset for this trace
+        dataset_bytes, = struct.unpack('%ds' % max_bytes, fd.read(maxx_bytes))
+        dataset = dataset_bytes.decode().strip('\0')
         # read the request type for this trace
         request_type_bytes, = struct.unpack('%ds' % max_bytes, fd.read(max_bytes))
         request_type = request_type_bytes.decode().strip('\0')
@@ -254,6 +260,6 @@ def ReadXTrace(trace_filename):
             edges.append(edge)
 
         # create new trace object and return
-        trace = XTrace(nodes, edges, request_type, request, base_id)
+        trace = XTrace(dataset, nodes, edges, request_type, request, base_id)
 
         return trace

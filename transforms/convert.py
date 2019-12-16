@@ -122,7 +122,7 @@ def ReadOpenStackJSONTrace(json_filename):
         edges.append(OpenStackEdge(nodes[source], nodes[destination], duration, variant))
 
     # create the new trace object and write to file
-    trace = OpenStackTrace(nodes, edges, request_type, base_id)
+    trace = OpenStackTrace('openstack', nodes, edges, request_type, base_id)
 
     trace.WriteToFile()
 
@@ -217,7 +217,7 @@ def ReadXTraceJSONTrace(json_filename):
     request_type = request.split(' ')[0].strip('-')
 
     # create the new trace object and write to file
-    trace = XTrace(nodes, edges, request_type, request, base_id)
+    trace = XTrace('xtrace', nodes, edges, request_type, request, base_id)
 
     trace.WriteToFile()
 
@@ -357,5 +357,5 @@ def ConvertSubGraph2GraphTool(subgraph):
         graph.add_edge(source_index, destination_index)
 
     graph.vertex_properties['label'] = labels
-    
+
     return graph

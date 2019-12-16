@@ -1,5 +1,5 @@
 class Trace(object):
-    def __init__(self, nodes, edges, request_type, base_id):
+    def __init__(self, dataset, nodes, edges, request_type, base_id):
         """
         Initialize a trace object given an input graph. The constructor also
         initializes attributes for the nodes and edges objects so needs to be
@@ -7,11 +7,14 @@ class Trace(object):
         node_to_index and an list of nodes ordered by timestamp. For easier use,
         there are also attributes minimum_timestamp and maximum_timestamp.
         Sequences represent linear, one-to-one sequence occurrences in the graph.
+        Motifs are added if the file can be read from disk.
+        @params dataset: the name of the dataset corresponding to tracing method
         @param nodes: list of nodes corresponding to this trace
         @param edges: list of edges corresponding to this trace
         @param request_type: the request that started this execution trace
         @param base_id: a unique identifier for this trace
         """
+        self.dataset = dataset
         self.nodes = nodes
         self.edges = edges
         self.request_type = request_type
@@ -99,6 +102,8 @@ class Trace(object):
         # update the extreme values in the new frame
         self.minimum_timestamp = self.ordered_nodes[0].timestamp
         self.maximum_timestamp = self.ordered_nodes[-1].timestamp
+
+        # read the motifs if the file exists
 
 
     def Filename(self):
@@ -295,8 +300,45 @@ def GetUniqueNodeSequences(dataset, fuzzy=False):
             # read in all the nodes in the sequence
             for _ in range(sequence_length):
                 sequence = sequence + (fd.readline().strip(),)
-            # create the mapping 
+            # create the mapping
             sequence_id = int(fd.readline().strip())
             sequence_to_index[sequence] = sequence_id
 
     return sequence_to_index
+
+
+
+def CollapseSequences(dataset, trace, fuzzy=False):
+    """
+    Collapse the sequences in the graph for faster motif discovery.
+    @params dataset: the dataset that the trace belongs to
+    @params trace: the trace to collapse the sequences for
+    @params fuzzy: allow fuzzy sequences or not for this dataset
+    """
+    # create the mapping to from sequences to names
+    sequence_to_index = GetUniqueNodeSequences(dataset, fuzzy)
+    name_to_index = GetUniqueNames(dataset)
+
+    # create a mapping to nodes to reduce the sequences
+    node_mapping = {}
+    print (trace.base_id)
+    for node in trace.nodes:
+        if node.sequence == None:
+            node_mapping[node.index] = node.index
+        else:
+            node_mapping[node.index] = len(trace.nodes) + node.sequence.index
+
+    # create a mapping to a reduced set of nodes
+    reduced_node_mapping = {}
+    nodes = []
+    for iv, value in enumerate(sorted(node_mapping.values())):
+        reduced_node_mapping[value] = iv
+        # if value < len(name_to_index):
+        #     nodes.append(value)
+
+    # create a list of edges
+    edges = []
+    for edge in trace.edges:
+        source_index = reduced_node_mapping[node_mapping[edge.source.index]]
+        destination_index = reduced_node_mapping[node_mapping[edge.destination.index]]
+        edges.append((source_index, destination_index))
