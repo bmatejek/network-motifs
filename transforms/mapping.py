@@ -69,7 +69,7 @@ def CreateHardNodeSequenceMapping(dataset):
         os.mkdir('mappings/{}'.format(dataset))
 
     # read all of the traces independent of request type
-    traces = dataIO.ReadTraces(dataset)
+    traces = dataIO.ReadTraces(dataset, None, None)
 
     # create a set of all the unique sequences
     sequences = set()
@@ -139,7 +139,7 @@ def CreateFuzzyNodeSequenceMapping(dataset):
         os.mkdir('mappings/{}'.format(dataset))
 
     # read all of the traces independent of request type
-    traces = dataIO.ReadTraces(dataset)
+    traces = dataIO.ReadTraces(dataset, None, None)
 
     # create a set of all the unique sequences
     sequences = set()
