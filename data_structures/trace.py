@@ -1,4 +1,5 @@
 import os
+import struct
 
 
 
@@ -289,7 +290,7 @@ def GetUniqueNames(dataset):
 
 
 
-def GetUniqueNodeSequences(dataset, fuzzy=False):
+def GetUniqueNodeSequences(dataset, fuzzy):
     """
     Returns a mapping from a unique sequence in the dataset to an id.
     @params dataset: the dataset for these unique names
@@ -319,7 +320,63 @@ def GetUniqueNodeSequences(dataset, fuzzy=False):
 
 
 
-def CollapseSequences(trace, fuzzy=False):
+def ReadCollapsedSequences(trace, cache_filename):
+    """
+    Read the collapsed sequences from file if they exist.
+    @params cache_filename: the file that conatains the cached data.
+    """
+    # get the dataset for this trace
+    dataset = trace.dataset
+
+    # first read the node mapping
+    nnodes = len(trace.nodes)
+    node_mapping = {}
+    reduced_nodes_to_nodes = {}
+    node_labels = []
+    node_label_names = []
+    edges = []
+
+    with open(cache_filename, 'rb') as fd:
+        # read the forward node mapping
+        for iv in range(nnodes):
+            mapped_value, = struct.unpack('q', fd.read(8))
+            node_mapping[iv] = mapped_value
+
+        # read the backwards mapping
+        nreduced_nodes, = struct.unpack('q', fd.read(8))
+        for iv in range(nreduced_nodes):
+            reduced_nodes_to_nodes[iv] = []
+            no_nodes_reduced, = struct.unpack('q', fd.read(8))
+            for ip in range(no_nodes_reduced):
+                node, = struct.unpack('q', fd.read(8))
+                reduced_nodes_to_nodes[iv].append(node)
+
+        for iv in range(nreduced_nodes):
+            label, = struct.unpack('q', fd.read(8))
+            node_labels.append(label)
+
+        # maximum bytes depends on the dataset
+        if dataset == 'openstack': max_bytes = 196
+        elif dataset == 'xtrace': max_bytes = 64
+        else: assert (False)
+
+        # read the node label names
+        for iv in range(nreduced_nodes):
+            node_label_name_bytes, = struct.unpack('%ds' % max_bytes, fd.read(max_bytes))
+            node_label_name = node_label_name_bytes.decode().strip('\0')
+            node_label_names.append(node_label_name)
+
+        # read the edges
+        nedges, = struct.unpack('q', fd.read(8))
+        for _ in range(nedges):
+            source_index, destination_index, = struct.unpack('qq', fd.read(16))
+            edges.append((source_index, destination_index))
+
+    return node_mapping, reduced_nodes_to_nodes, node_labels, node_label_names, edges
+
+
+
+def CollapseSequences(trace, fuzzy):
     """
     Collapse the sequences in the graph for faster motif discovery.
     @params trace: the trace to collapse the sequences for
@@ -327,6 +384,14 @@ def CollapseSequences(trace, fuzzy=False):
     """
     # get the dataset for this trace
     dataset = trace.dataset
+    base_id = trace.base_id
+
+    # use a cached version of this file if it exists
+    if fuzzy: cache_filename = 'cache/{}/{}-fuzzy-collapsed.graph'.format(dataset, base_id)
+    else: cache_filename = 'cache/{}/{}-collapsed.graph'.format(dataset, base_id)
+
+    if os.path.exists(cache_filename):
+        return ReadCollapsedSequences(trace, cache_filename)
 
     # create the mapping to from sequences to names
     sequence_to_index = GetUniqueNodeSequences(dataset, fuzzy)
@@ -335,6 +400,7 @@ def CollapseSequences(trace, fuzzy=False):
 
     # create a mapping to nodes to reduce the sequences
     node_mapping = {}
+    reduced_nodes_to_nodes = {}
 
     for node in trace.nodes:
         if node.sequence == None:
@@ -348,9 +414,8 @@ def CollapseSequences(trace, fuzzy=False):
 
     for iv, value in enumerate(unique_nodes):
         reduced_node_mapping[value] = iv
-        # update the node mappings so no longer need reduced node mapping
+    # update the node mappings so no longer need reduced node mapping
     for key in node_mapping:
-        #print (key)
         node_mapping[key] = reduced_node_mapping[node_mapping[key]]
 
     # create the node labels and the node names
@@ -361,7 +426,12 @@ def CollapseSequences(trace, fuzzy=False):
 
     for node in trace.nodes:
         new_node_index = node_mapping[node.index]
-        #print (new_node_index)
+
+        # add this node to the reduced list for easier back movement
+        if not new_node_index in reduced_nodes_to_nodes:
+            reduced_nodes_to_nodes[new_node_index] = []
+        reduced_nodes_to_nodes[new_node_index].append(node.index)
+
         sequence = node.sequence
         if sequence == None:
             node_label_names[new_node_index] = node.Name()
@@ -380,5 +450,47 @@ def CollapseSequences(trace, fuzzy=False):
         if source_index == destination_index: continue
         edges.append((source_index, destination_index))
 
+    # create an output directory if needed
+    if not os.path.exists('cache'):
+        os.mkdir('cache')
+    if not os.path.exists('cache/{}'.format(dataset)):
+        os.mkdir('cache/{}'.format(dataset))
+
+    # save the relevant information to disk
+    with open(cache_filename, 'wb') as fd:
+        # write the forward mapping
+        for node in trace.nodes:
+            fd.write(struct.pack('q', node_mapping[node.index]))
+
+        # write the reverse mapping
+        nreduced_nodes = len(reduced_nodes_to_nodes)
+        fd.write(struct.pack('q', nreduced_nodes))
+        for iv in range(nreduced_nodes):
+            no_nodes_reduced = len(reduced_nodes_to_nodes[iv])
+            fd.write(struct.pack('q', no_nodes_reduced))
+            for ip in range(no_nodes_reduced):
+                fd.write(struct.pack('q', reduced_nodes_to_nodes[iv][ip]))
+
+        # write the node labels
+        for iv in range(nreduced_nodes):
+            fd.write(struct.pack('q', node_labels[iv]))
+
+        # maximum bytes depends on the dataset
+        if dataset == 'openstack': max_bytes = 196
+        elif dataset == 'xtrace': max_bytes = 64
+        else: assert (False)
+
+        # write the node label names
+        for iv in range(nreduced_nodes):
+            node_label_name_bytes = node_label_names[iv].encode()
+            assert (len(node_label_name_bytes) <= max_bytes)
+            fd.write(struct.pack('%ds' % max_bytes, node_label_name_bytes))
+
+        # write all of the
+        nedges = len(edges)
+        fd.write(struct.pack('q', nedges))
+        for (source_index, destination_index) in edges:
+            fd.write(struct.pack('qq', source_index, destination_index))
+
     # return the nodes, edges, and various mappings
-    return node_labels, node_label_names, edges
+    return node_mapping, reduced_nodes_to_nodes, node_labels, node_label_names, edges
