@@ -363,12 +363,42 @@ def ConvertSubGraph2GraphTool(subgraph):
 
 
 
+def ConvertCollapsedGraph2GraphTool(trace, fuzzy):
+    """
+    Collapse the node sequences in the trace and return the graph in a graph
+    tool format to use the motif discovery tools.
+    @params trace: the trace to collapse all of the sequences
+    @params fuzzy: do we allow fuzzy sequences or not?
+    """
+    graph = gt.Graph(directed=True)
+
+    # collapse the sequences for this graph
+    _, reduced_nodes_to_nodes, node_labels, _, edges = CollapseSequences(trace, fuzzy)
+    nnodes = len(node_labels)
+
+    # create a new property for the vertices
+    labels = graph.new_vertex_property('int')
+
+    for iv in range(nnodes):
+        vertex = graph.add_vertex()
+        labels[vertex] = node_labels[iv]
+
+    # add all of the edges into the graph
+    for (source_index, destination_index) in edges:
+        graph.add_edge(source_index, destination_index)
+
+    graph.vertex_properties['label'] = labels
+
+    return graph, reduced_nodes_to_nodes
+
+
+
 def ConvertCollapsedGraphs2GastonGraph(dataset, fuzzy):
     """
     Collapse all of the graphs for this dataset, save a dot file for visualization,
     and produce a gaston file for motif discovery.
     @params dataset: the dataset to read the traces and collapse long sequences
-    @params fuzzy: do we allow fuzzy motifs or not
+    @params fuzzy: do we allow fuzzy sequences or not
     """
     # start statistics
     start_time = time.time()
@@ -386,7 +416,7 @@ def ConvertCollapsedGraphs2GastonGraph(dataset, fuzzy):
 
             for trace_index, trace in enumerate(traces):
                 # collapse all of the sequences
-                node_labels, node_label_names, edges = CollapseSequences(trace, fuzzy)
+                _, _, node_labels, node_label_names, edges = CollapseSequences(trace, fuzzy)
                 fd.write('t # {}\n'.format(trace_index))
 
                 # add all of the nodes
