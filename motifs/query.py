@@ -8,13 +8,13 @@ import graph_tool.all as gt
 
 
 
-from network_motifs.transforms.convert import ConvertTrace2GraphTool, ConvertSubGraph2GraphTool
+from network_motifs.transforms.convert import ConvertTrace2GraphTool, ConvertSubGraph2GraphTool, ConvertCollapsedGraph2GraphTool
 from network_motifs.motifs.motif import Motif, SubGraph
 from network_motifs.utilities.dataIO import ReadTraces
 
 
 
-def IdentifyFrequentSubgraphs(dataset, request_type):
+def IdentifyFrequentSubgraphs(dataset, request_type, collapsed, fuzzy):
     """
     Populate an array of frequent subgraphs found using the GASTON algorithm.
     @params dataset: the dataset to mine for frequent sub graphs
@@ -24,7 +24,10 @@ def IdentifyFrequentSubgraphs(dataset, request_type):
     subgraphs = []
 
     # read the subgraphs generated from GASTON
-    subgraph_filename = 'motifs/patterns/{}/{}-gaston-patterns.txt'.format(dataset, request_type)
+    if not collapsed: subgraph_filename = 'motifs/patterns/{}/{}-gaston-patterns.txt'.format(dataset, request_type)
+    elif not fuzzy: subgraph_filename = 'motifs/patterns/{}/{}-collapsed-gaston-patterns.txt'.format(dataset, request_type)
+    else: subgraph_filename = 'motifs/patterns/{}/{}-collapsed-gaston-patterns.txt'.format(dataset, request_type)
+
     with open(subgraph_filename, 'r') as fd:
         # read all of the lines in the file
         lines = fd.readlines()
@@ -60,6 +63,37 @@ def IdentifyFrequentSubgraphs(dataset, request_type):
 
 
 
+def MotifStatistics(motifs):
+    """
+    Print statistics for this set of motifs (size, duration, etc.)
+    @params motifs: the motifs to analyze
+    """
+    nmotifs = len(motifs)
+    nnodes_per_motifs = []
+
+    for motif in motifs:
+        nnodes_per_motifs.append(len(motif.nodes))
+
+
+
+def WriteMotifs(filename, motifs):
+    """
+    Write all of the found motifs for this trace to file.
+    @params filename: the file to store the motifs
+    @params motifs: a list of motif objects to save to disk
+    """
+    with open(filename, 'wb') as fd:
+        nmotifs = len(motifs)
+        fd.write(struct.pack('q', nmotifs))
+        for motif in motifs:
+            nnodes = len(motif.nodes)
+            fd.write(struct.pack('q', nnodes))
+            for node in motif.nodes:
+                fd.write(struct.pack('q', node.index))
+            fd.write(struct.pack('q', motif.motif_index))
+
+
+
 def QueryTraces(dataset, request_type):
     """
     Find all occurrences for each motif for this dataset/request_type comboination.
@@ -78,16 +112,19 @@ def QueryTraces(dataset, request_type):
     start_time = time.time()
 
     # read the frequent subgraphs for this dataset/request type
-    subgraphs = IdentifyFrequentSubgraphs(dataset, request_type)
+    subgraphs = IdentifyFrequentSubgraphs(dataset, request_type, False, False)
 
     # read all of the traces and mine the graph
-    traces = ReadTraces(dataset, request_type)
+    traces = ReadTraces(dataset, request_type, None)
 
     for trace in traces:
+        # start statistics
+        start_time = time.time()
+
         graph = ConvertTrace2GraphTool(dataset, trace)
         motifs = []
 
-        for subgraph in subgraphs:
+        for motif_index, subgraph in enumerate(subgraphs):
             motif = ConvertSubGraph2GraphTool(subgraph)
 
             # use graph tool to find all motif occurrences
@@ -98,17 +135,68 @@ def QueryTraces(dataset, request_type):
                 nodes = []
                 for node in vertex_map:
                     nodes.append(trace.nodes[node])
-                motifs.append(Motif(trace, nodes))
+                motifs.append(Motif(trace, nodes, motif_index))
 
-        # save the motif to disk
-        motif_filename = 'motifs/subgraphs/{}/{}.motifs'.format(dataset, trace.base_id)
-        with open(motif_filename, 'wb') as fd:
-            fd.write(struct.pack('q', len(motifs)))
-            for motif in motifs:
-                nnodes = len(motif.nodes)
-                fd.write(struct.pack('q', nnodes))
-                for node in motif.nodes:
-                    fd.write(struct.pack('q', node.index))
+        # write the motifs to disk
+        output_filename = 'motifs/subgraphs/{}/{}-motifs-complete.motifs'.format(dataset, trace.base_id)
+        WriteMotifs(output_filename, motifs)
 
-    # print statistics
-    print ('Mined traces for {} request {} in {:0.2f} seconds.'.format(dataset, request_type, time.time() - start_time))
+        # print statistics
+        print ('Mined traces for {} in {:0.2f} seconds.'.format(trace.base_id, time.time() - start_time))
+
+
+
+def QueryCollapsedGraphs(dataset, request_type, fuzzy):
+    """
+    Find motifs in the graphs with collapsed node sequences. Saves the motifs to
+    file
+    @params dataset: dataset to find motifs in the collapsed sequences
+    @params request_type: request for this particular set of traces
+    @params fuzzy: can this motif be fuzzy?
+    """
+    # create the directory structure
+    if not os.path.exists('motifs'):
+        os.mkdir('motifs')
+    if not os.path.exists('motifs/subgraphs'):
+        os.mkdir('motifs/subgraphs')
+    if not os.path.exists('motifs/subgraphs/{}'.format(dataset)):
+        os.mkdir('motifs/subgraphs/{}'.format(dataset))
+
+    # read the frequent subgraphs for this dataset/request type
+    subgraphs = IdentifyFrequentSubgraphs(dataset, request_type, True, fuzzy)
+
+    # read all of the traces
+    traces = ReadTraces(dataset, request_type, None)
+
+    for trace in traces:
+        # start statistics
+        start_time = time.time()
+
+        # reduced nodes to nodes is a funciton to go from the reduced node space to the original
+        graph, reduced_nodes_to_nodes = ConvertCollapsedGraph2GraphTool(trace, fuzzy)
+        motifs = []
+
+        for motif_index, subgraph in enumerate(subgraphs):
+            motif = ConvertSubGraph2GraphTool(subgraph)
+
+            # use graph tool to find all motif occurrences
+            vertex_maps = gt.subgraph_isomorphism(motif, graph, vertex_label=(motif.vp.label, graph.vp.label))
+
+            # go through all of the found motif patterns
+            for vertex_map in vertex_maps:
+                nodes = []
+                # add all of the nodes that belong to each vertex (collapsed nodes)
+                for node in reduced_nodes_to_nodes[vertex_map]:
+                    assert (not trace.nodes[node] in nodes)
+                    nodes.append(trace.nodes[node])
+
+                motifs.append(Motif(trace, nodes, motif_index))
+
+        # write the motifs to disk
+        if fuzzy: output_filename = 'motifs/subgraphs/{}/{}-motifs-fuzzy-collapsed-complete.motifs'.format(dataset, trace.base_id)
+        else: output_filename = 'motifs/subgraphs/{}/{}-motifs-collapsed-complete.motifs'.format(dataset, trace.base_id)
+
+        WriteMotifs(output_filename, motifs)
+
+        # print statistics
+        print ('Mined traces for {} in {:0.2f} seconds.'.format(trace.base_id, time.time() - start_time))
