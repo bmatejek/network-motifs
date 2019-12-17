@@ -18,8 +18,18 @@ def CompareMotifMethods(dataset, request_type):
     start_time = time.time()
 
     # motif methods have the following suffixes
-    suffixes = ['complete', 'collapsed-complete', 'fuzzy-collpased-complete',
+    suffixes = ['complete', 'collapsed-complete', 'fuzzy-collapsed-complete',
                 'pruned', 'collapsed-pruned', 'fuzzy-collapsed-pruned']
+
+    suffix_human_readable = {
+        'complete': 'Exhaustive Motifs',
+        'collapsed-complete': 'Exhaustive Sequence Reduced',
+        'fuzzy-collapsed-complete': 'Exhaustive Fuzzy Sequence Reduced',
+        'pruned': 'Pruned Motifs',
+        'collapsed-pruned': 'Pruned Sequence Reduced',
+        'fuzzy-collapsed-pruned': 'Pruned Fuzzy Sequence Reduced',
+
+    }
 
     # read all of the relevant traces
     traces = ReadTraces(dataset, request_type, None)
@@ -51,8 +61,8 @@ def CompareMotifMethods(dataset, request_type):
         if not len(motif_sizes): continue
 
         # print the statistics for this motif method
-        print (suffix)
-        print ('{:0.2f} ($\pm${:0.2f}) & {} & {:0.2f} ($\pm${:0.2f}) & {:0.2f} ($\pm${:0.2f})'.format(
+        print ('{} & {:0.2f} ($\pm${:0.2f}) & {} & {:0.2f} ($\pm${:0.2f}) & {:0.2f} ($\pm${:0.2f})'.format(
+                                                suffix_human_readable[suffix],
                                                 statistics.mean(motifs_per_trace),
                                                 statistics.pstdev(motifs_per_trace),
                                                 len(unique_motifs),

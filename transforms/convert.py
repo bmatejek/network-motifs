@@ -87,7 +87,6 @@ def ReadOpenStackJSONTrace(json_filename):
     # cannot handle node holes at the moment
     assert (not len(graph['node_holes']))
 
-
     # only care about directed graphs
     assert (graph['edge_property'] == 'directed')
 
@@ -311,7 +310,7 @@ def ConvertTrace2GraphTool(dataset, trace):
     Convert the given trace into an object that can be used for graph tool functions.
     @params trace: the trace to convert into a graph tool object
     """
-    graph = gt.Graph(directed=True)
+    graph = gt.Graph(directed=False)
 
     name_to_index = GetUniqueNames(dataset)
 
@@ -339,7 +338,7 @@ def ConvertSubGraph2GraphTool(subgraph):
     Convert the SubGraph from frequent subgraph discovery algorithm into a graph tool object.
     @params subgraph: the subgraph to convert into a graph tool object
     """
-    graph = gt.Graph(directed=True)
+    graph = gt.Graph(directed=False)
 
     # get the attributes for this subgraph
     vertices = subgraph.vertices
@@ -369,7 +368,7 @@ def ConvertCollapsedGraph2GraphTool(trace, fuzzy):
     @params trace: the trace to collapse all of the sequences
     @params fuzzy: do we allow fuzzy sequences or not?
     """
-    graph = gt.Graph(directed=True)
+    graph = gt.Graph(directed=False)
 
     # collapse the sequences for this graph
     _, reduced_nodes_to_nodes, node_labels, _, edges = CollapseSequences(trace, fuzzy)

@@ -24,7 +24,7 @@ def IdentifyFrequentSubgraphs(dataset, request_type, collapsed, fuzzy):
 
     # read the subgraphs generated from GASTON
     if not collapsed: subgraph_filename = 'motifs/patterns/{}/{}-gaston-patterns.txt'.format(dataset, request_type)
-    elif not fuzzy: subgraph_filename = 'motifs/patterns/{}/{}-collapsed-gaston-patterns.txt'.format(dataset, request_type)
+    elif fuzzy: subgraph_filename = 'motifs/patterns/{}/{}-fuzzy-collapsed-gaston-patterns.txt'.format(dataset, request_type)
     else: subgraph_filename = 'motifs/patterns/{}/{}-collapsed-gaston-patterns.txt'.format(dataset, request_type)
 
     with open(subgraph_filename, 'r') as fd:
@@ -91,9 +91,7 @@ def QueryTraces(dataset, request_type):
 
         graph = ConvertTrace2GraphTool(dataset, trace)
         motifs = []
-        print (trace.request_type)
-        print (len(subgraphs))
-        break
+
         for motif_index, subgraph in enumerate(subgraphs):
             motif = ConvertSubGraph2GraphTool(subgraph)
 
@@ -134,9 +132,10 @@ def QueryCollapsedGraphs(dataset, request_type, fuzzy):
 
     # read the frequent subgraphs for this dataset/request type
     subgraphs = IdentifyFrequentSubgraphs(dataset, request_type, True, fuzzy)
-
     # read all of the traces
     traces = ReadTraces(dataset, request_type, None)
+
+    subgraphs_found = set()
 
     for trace in traces:
         # start statistics
@@ -160,7 +159,7 @@ def QueryCollapsedGraphs(dataset, request_type, fuzzy):
                     for node in reduced_nodes_to_nodes[reduced_node]:
                         assert (not trace.nodes[node] in nodes)
                         nodes.append(trace.nodes[node])
-
+                subgraphs_found.add(motif_index)
                 motifs.append(Motif(trace, nodes, motif_index))
 
         # write the motifs to disk

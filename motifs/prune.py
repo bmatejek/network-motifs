@@ -23,6 +23,7 @@ def PruneMotifs(dataset, suffix):
     for trace in traces:
         # read the motifs for this trace dataset
         motifs = ReadMotifs(dataset, trace, suffix)
+
         pruned_motifs = []
 
         # all nodes start as uncovered
