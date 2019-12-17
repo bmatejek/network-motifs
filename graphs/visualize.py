@@ -107,8 +107,6 @@ def VisualizeGraphFromTrace(trace):
 
 
 
-
-
 def VisualizeCollapsedGraph(trace, node_names, edges, fuzzy):
     """
     Visualize the collapsed graph and save the output.

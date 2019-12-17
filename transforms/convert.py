@@ -269,7 +269,6 @@ def ConvertTrace2GastonGraph(dataset, request_type, traces):
                 # check to make sure each node is unique
                 name_index = name_to_index[node.Name()]
 
-                #fd.write('v {:07d} {:04d}\n'.format(node.index, name_index))
                 fd.write('v {:07d} {:04d}\n'.format(node.index, name_index))
 
             # go through each edge in the trace
