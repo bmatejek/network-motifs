@@ -1,5 +1,9 @@
-from network_motifs.motifs.motif import WriteMotifs
-from network_motifs.utilities.dataIO import ReadMotifs, ReadTraces
+import time
+
+
+
+from network_motifs.motifs.motif import ReadMotifs, WriteMotifs
+from network_motifs.utilities.dataIO import ReadTraces
 
 
 
@@ -9,6 +13,9 @@ def PruneMotifs(dataset, suffix):
     most one motif. Motifs with earlier start indices and larger spans are
     prioritized.
     """
+    # start statistics
+    start_time = time.time()
+
     # read all of the traces for this dataset
     traces = ReadTraces(dataset, None, None)
 
@@ -47,3 +54,6 @@ def PruneMotifs(dataset, suffix):
         output_filename = 'motifs/subgraphs/{}/{}-motifs-{}.motifs'.format(dataset, trace.base_id, output_suffix)
 
         WriteMotifs(output_filename, pruned_motifs)
+
+    # print statistics
+    print ('Pruned motifs for {} in {:0.2f} seconds.'.format(dataset, time.time() - start_time))

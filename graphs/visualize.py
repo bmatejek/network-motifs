@@ -51,6 +51,62 @@ def VisualizeGraphFromTrace(trace):
     A.layout(prog='dot')
     A.draw('dots/{}/{}.dot'.format(dataset, trace.base_id))
 
+    motifs = {}
+    motifs[None] = 'black'
+    for motif in trace.motifs:
+        motifs[motif] = random.choice(color_options)
+
+    # add colors to nodes based on sequences
+    colors = {}
+    for node in trace.nodes:
+        colors[node.index] = motifs[node.motif]
+
+    # set the attributes for this node
+    nx.set_node_attributes(graph, colors, 'color')
+
+    # save the graph into dot format
+    A = nx.nx_agraph.to_agraph(graph)
+    A.layout(prog='dot')
+    A.draw('dots/{}/{}-motifs.dot'.format(dataset, trace.base_id))
+
+    collapsed_motifs = {}
+    collapsed_motifs[None] = 'black'
+    for collapsed_motif in trace.collapsed_motifs:
+        collapsed_motifs[collapsed_motif] = random.choice(color_options)
+
+    # add colors to nodes based on sequences
+    colors = {}
+    for node in trace.nodes:
+        colors[node.index] = collapsed_motifs[node.collapsed_motif]
+
+    # set the attributes for this node
+    nx.set_node_attributes(graph, colors, 'color')
+
+    # save the graph into dot format
+    A = nx.nx_agraph.to_agraph(graph)
+    A.layout(prog='dot')
+    A.draw('dots/{}/{}-collapsed-motifs.dot'.format(dataset, trace.base_id))
+
+    fuzzy_collapsed_motifs = {}
+    fuzzy_collapsed_motifs[None] = 'black'
+    for fuzzy_collapsed_motif in trace.fuzzy_collapsed_motifs:
+        fuzzy_collapsed_motifs[fuzzy_collapsed_motif] = random.choice(color_options)
+
+    # add colors to nodes based on sequences
+    colors = {}
+    for node in trace.nodes:
+        colors[node.index] = fuzzy_collapsed_motifs[node.fuzzy_collapsed_motif]
+
+    # set the attributes for this node
+    nx.set_node_attributes(graph, colors, 'color')
+
+    # save the graph into dot format
+    A = nx.nx_agraph.to_agraph(graph)
+    A.layout(prog='dot')
+    A.draw('dots/{}/{}-fuzzy-collapsed-motifs.dot'.format(dataset, trace.base_id))
+
+
+
 
 
 def VisualizeCollapsedGraph(trace, node_names, edges, fuzzy):

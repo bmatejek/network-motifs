@@ -62,19 +62,6 @@ def IdentifyFrequentSubgraphs(dataset, request_type, collapsed, fuzzy):
 
 
 
-def MotifStatistics(motifs):
-    """
-    Print statistics for this set of motifs (size, duration, etc.)
-    @params motifs: the motifs to analyze
-    """
-    nmotifs = len(motifs)
-    nnodes_per_motifs = []
-
-    for motif in motifs:
-        nnodes_per_motifs.append(len(motif.nodes))
-
-
-
 def QueryTraces(dataset, request_type):
     """
     Find all occurrences for each motif for this dataset/request_type comboination.
@@ -104,7 +91,9 @@ def QueryTraces(dataset, request_type):
 
         graph = ConvertTrace2GraphTool(dataset, trace)
         motifs = []
-
+        print (trace.request_type)
+        print (len(subgraphs))
+        break
         for motif_index, subgraph in enumerate(subgraphs):
             motif = ConvertSubGraph2GraphTool(subgraph)
 

@@ -7,6 +7,10 @@ import pandas as pd
 
 
 
+from network_motifs.motifs.motif import ReadMotifs
+
+
+
 class Trace(object):
     def __init__(self, dataset, nodes, edges, request_type, base_id):
         """
@@ -113,6 +117,23 @@ class Trace(object):
         self.maximum_timestamp = self.ordered_nodes[-1].timestamp
 
         # read the motifs if the file exists
+        self.motifs = ReadMotifs(self.dataset, self, 'pruned')
+        self.collapsed_motifs = ReadMotifs(self.dataset, self, 'collapsed-pruned')
+        self.fuzzy_collapsed_motifs = ReadMotifs(self.dataset, self, 'fuzzy-collapsed-pruned')
+
+        # add the references for each motif
+        for motif in self.motifs:
+            for node in motif.nodes:
+                assert (node.motif == None)
+                node.motif = motif
+        for motif in self.collapsed_motifs:
+            for node in motif.nodes:
+                assert (node.collapsed_motif == None)
+                node.collapsed_motif = motif
+        for motif in self.fuzzy_collapsed_motifs:
+            for node in motif.nodes:
+                assert (node.fuzzy_collapsed_motif == None)
+                node.fuzzy_collapsed_motif = motif
 
 
     def Filename(self):
@@ -183,6 +204,10 @@ class TraceNode(object):
         self.children_nodes = []
         self.parent_nodes = []
         self.sequence = None
+        # three different possible motif options
+        self.motif = None
+        self.collapsed_motif = None
+        self.fuzzy_collapsed_motif = None
         self.index = -1
 
     def Name(self):
