@@ -1,3 +1,5 @@
+import os
+import time
 import random
 import keras
 
@@ -50,7 +52,7 @@ def GenerateExamples(dataset_features, dataset_labels, parameters):
     nfeatures = parameters['nfeatures']
 
     input_features = np.zeros((batch_size, nfeatures), dtype=np.float32)
-    input_labels = np.zeros(batch_size, dtype=np.int32)
+    input_labels = np.zeros(batch_size, dtype=np.float32)
 
     indices = [iv for iv in range(ndata_points)]
     random.shuffle(indices)
@@ -76,47 +78,54 @@ def GenerateExamples(dataset_features, dataset_labels, parameters):
 
 
 def Train(dataset):
-    # create models with and without motif features
-    for with_motifs in [True, False]:
-        # create a new model for every request type
-        for request_type in request_types_per_dataset[dataset]:
-            # read the training and validation features from disk
-            training_filenames = dataIO.ReadTrainingFilenames(dataset, request_type)
-            validation_filenames = dataIO.ReadValidationFilenames(dataset, request_type)
+    if not os.path.exists('networks/QoSNet/architectures'):
+        os.mkdir('networks/QoSNet/architectures')
 
-            training_features, training_labels = ReadFeatures(dataset, training_filenames, with_motifs)
-            validation_features, validation_labels = ReadFeatures(dataset, validation_filenames, with_motifs)
+    # create a new model for every request type
+    for request_type in request_types_per_dataset[dataset]:
+        # start statistics
+        start_time = time.time()
 
-            parameters = {}
-            parameters['first-layer'] = 512
-            parameters['second-layer'] = 256
-            parameters['third-layer'] = 128
-            parameters['batch_size'] = 1000
-            parameters['nfeatures'] = training_features[0].size
+        # read the training and validation features from disk
+        training_filenames = dataIO.ReadTrainingFilenames(dataset, request_type)
+        validation_filenames = dataIO.ReadValidationFilenames(dataset, request_type)
 
-            # create the simple model
-            model = QoSNet(parameters)
+        training_features, training_labels, _ = ReadFeatures(dataset, training_filenames)
+        validation_features, validation_labels, _ = ReadFeatures(dataset, validation_filenames)
 
-            # how many example to run for each epoch
-            examples_per_epoch = 20000
-            batch_size = parameters['batch_size']
+        parameters = {}
+        parameters['first-layer'] = 512
+        parameters['second-layer'] = 256
+        parameters['third-layer'] = 128
+        parameters['batch_size'] = 1000
+        parameters['nfeatures'] = training_features[0].size
 
-            if with_motifs: model_prefix = 'networks/QoSNet/architectures/{}-request-type-{}-params-{}-{}-{}-batch-size-{}-with-motifs'.format(dataset, request_type, parameters['first-layer'], parameters['second-layer'], parameters['third-layer'], batch_size)
-            else: model_prefix = 'networks/QoSNet/architectures/{}-request-type-{}-params-{}-{}-{}-batch-size-{}'.format(dataset, request_type, parameters['first-layer'], parameters['second-layer'], parameters['third-layer'], batch_size)
+        # create the simple model
+        model = QoSNet(parameters)
 
-            # create the set of keras callbacks
-            callbacks = []
-            best_loss = keras.callbacks.ModelCheckpoint('{}-best-loss.h5'.format(model_prefix), monitor='val_loss', verbose=0, save_best_only=True, save_weights_only=True, mode='auto', period=1)
-            callbacks.append(best_loss)
+        # how many example to run for each epoch
+        examples_per_epoch = 20000
+        batch_size = parameters['batch_size']
 
-            json_string = model.to_json()
-            open('{}.json'.format(model_prefix), 'w').write(json_string)
+        model_prefix = 'networks/QoSNet/architectures/{}-request-type-{}-params-{}-{}-{}-batch-size-{}'.format(dataset, request_type, parameters['first-layer'], parameters['second-layer'], parameters['third-layer'], batch_size)
 
-            model.fit_generator(
-                                GenerateExamples(training_features, training_labels, parameters),
-                                steps_per_epoch=examples_per_epoch // batch_size,
-                                epochs=500,
-                                callbacks=callbacks,
-                                validation_data=GenerateExamples(validation_features, validation_labels, parameters),
-                                validation_steps=examples_per_epoch // batch_size
-                                )
+        # create the set of keras callbacks
+        callbacks = []
+        best_loss = keras.callbacks.ModelCheckpoint('{}-best-loss.h5'.format(model_prefix), monitor='val_loss', verbose=0, save_best_only=True, save_weights_only=True, mode='auto', period=1)
+        callbacks.append(best_loss)
+
+        json_string = model.to_json()
+        open('{}.json'.format(model_prefix), 'w').write(json_string)
+
+        model.fit_generator(
+                            GenerateExamples(training_features, training_labels, parameters),
+                            steps_per_epoch=examples_per_epoch // batch_size,
+                            epochs=500,
+                            callbacks=callbacks,
+                            validation_data=GenerateExamples(validation_features, validation_labels, parameters),
+                            validation_steps=examples_per_epoch // batch_size,
+                            verbose=0
+                            )
+
+        # print statistics
+        print ('Completed training {} {} in {:0.2f} seconds.'.format(dataset, request_type, time.time() - start_time))

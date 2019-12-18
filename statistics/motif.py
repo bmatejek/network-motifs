@@ -1,22 +1,18 @@
-import time
 import statistics
 
 
 
 from network_motifs.motifs.motif import ReadMotifs
+from network_motifs.motifs.query import IdentifyFrequentSubgraphs
 from network_motifs.utilities.dataIO import ReadTraces
 
 
 
-def CompareMotifMethods(dataset, request_type):
+def CompareMotifMethods(dataset):
     """
     Compare the various methods for generating motifs for various statistics.
     @params dataset: the dataset that contains all of the traces
-    @params request_type: the type of request that we have for this data combo
     """
-    # start_statistics
-    start_time = time.time()
-
     # motif methods have the following suffixes
     suffixes = ['complete', 'collapsed-complete', 'fuzzy-collapsed-complete',
                 'pruned', 'collapsed-pruned', 'fuzzy-collapsed-pruned']
@@ -31,16 +27,16 @@ def CompareMotifMethods(dataset, request_type):
 
     }
 
+    print ('{}'.format(dataset))
+
     # read all of the relevant traces
-    traces = ReadTraces(dataset, request_type, None)
+    traces = ReadTraces(dataset, None, None)
     # get the statistics for this suffix
     for suffix in suffixes:
-
         motifs_per_trace = []
         unique_motifs = set()
         motif_sizes = []
         coverages = []
-
         for trace in traces:
             # read the motifs for this trace
             motifs = ReadMotifs(dataset, trace, suffix)
@@ -59,9 +55,9 @@ def CompareMotifMethods(dataset, request_type):
             coverages.append(100 * sum(nodes_covered) / nnodes)
 
         if not len(motif_sizes): continue
-
+        max_motif_size = max(motif_sizes)
         # print the statistics for this motif method
-        print ('{} & {:0.2f} ($\pm${:0.2f}) & {} & {:0.2f} ($\pm${:0.2f}) & {:0.2f} ($\pm${:0.2f})'.format(
+        print ('{} & {:0.2f} ($\pm${:0.2f}) & {} & {:0.2f} ($\pm${:0.2f}) & {:0.2f} ($\pm${:0.2f}) & {}'.format(
                                                 suffix_human_readable[suffix],
                                                 statistics.mean(motifs_per_trace),
                                                 statistics.pstdev(motifs_per_trace),
@@ -69,8 +65,7 @@ def CompareMotifMethods(dataset, request_type):
                                                 statistics.mean(motif_sizes),
                                                 statistics.pstdev(motif_sizes),
                                                 statistics.mean(coverages),
-                                                statistics.pstdev(coverages)
+                                                statistics.pstdev(coverages),
+                                                max_motif_size
                                                 ))
-
-    # print statistics
-    print ('Generated statistics for {} {} in {:0.2f} seconds.'.format(dataset, request_type, time.time() - start_time))
+    print ('\n')

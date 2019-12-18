@@ -94,29 +94,29 @@ def FindUniqueTopologies(traces):
     node_match = isomorphism.numerical_node_match('label', None)
 
     unique_graphs = []
+    durations = []
+    nodes = []
 
     for trace in traces:
         graph_from_trace = ConstructGraphFromTrace(trace)
+        nodes.append(len(trace.nodes))
+        durations.append(trace.duration)
 
         # see if this matches any exists graphs
         unique_graph = True
-        for iv in range(len(unique_graphs)):
-            (durations, graph) = unique_graphs[iv]
-
-            if nx.is_isomorphic(graph_from_trace, graph):
-                durations.append(trace.duration)
-                unique_graphs[iv] = (durations, graph)
+        for unique_graph in unique_graphs:
+            if nx.is_isomorphic(graph_from_trace, unique_graph):
                 unique_graph = False
                 break
 
         # create new entry for unique graph
         if unique_graph:
-            unique_graphs.append(([trace.duration], graph_from_trace))
+            unique_graphs.append(graph_from_trace)
 
-    # print statistics for the graph
-    for (durations, graph) in unique_graphs:
-        ntraces = len(durations)
-        avg_duration = statistics.mean(durations)
-        stddev_duration = statistics.pstdev(durations)
 
-        print ('{} & {:0.2f} ($\pm$ {:0.2f})'.format(ntraces, avg_duration, stddev_duration))
+    print (len(traces))
+    print (statistics.mean(nodes))
+    print (statistics.pstdev(nodes))
+    print (statistics.mean(durations))
+    print (statistics.pstdev(durations))
+    print (len(unique_graphs))

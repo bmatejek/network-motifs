@@ -85,9 +85,13 @@ def QueryTraces(dataset, request_type):
     # read all of the traces and mine the graph
     traces = ReadTraces(dataset, request_type, None)
 
-    for trace in traces:
+    for iv, trace in enumerate(traces):
         # start statistics
         start_time = time.time()
+
+        # skip over the file if it already exists
+        output_filename = 'motifs/subgraphs/{}/{}-motifs-complete.motifs'.format(dataset, trace.base_id)
+        if os.path.exists(output_filename): continue
 
         graph = ConvertTrace2GraphTool(dataset, trace)
         motifs = []
@@ -106,7 +110,6 @@ def QueryTraces(dataset, request_type):
                 motifs.append(Motif(trace, nodes, motif_index))
 
         # write the motifs to disk
-        output_filename = 'motifs/subgraphs/{}/{}-motifs-complete.motifs'.format(dataset, trace.base_id)
         WriteMotifs(output_filename, motifs)
 
         # print statistics
@@ -135,11 +138,14 @@ def QueryCollapsedGraphs(dataset, request_type, fuzzy):
     # read all of the traces
     traces = ReadTraces(dataset, request_type, None)
 
-    subgraphs_found = set()
-
-    for trace in traces:
+    for iv, trace in enumerate(traces):
         # start statistics
         start_time = time.time()
+
+        # write the motifs to disk
+        if fuzzy: output_filename = 'motifs/subgraphs/{}/{}-motifs-fuzzy-collapsed-complete.motifs'.format(dataset, trace.base_id)
+        else: output_filename = 'motifs/subgraphs/{}/{}-motifs-collapsed-complete.motifs'.format(dataset, trace.base_id)
+        if os.path.exists(output_filename): continue
 
         # reduced nodes to nodes is a funciton to go from the reduced node space to the original
         graph, reduced_nodes_to_nodes = ConvertCollapsedGraph2GraphTool(trace, fuzzy)
@@ -159,12 +165,8 @@ def QueryCollapsedGraphs(dataset, request_type, fuzzy):
                     for node in reduced_nodes_to_nodes[reduced_node]:
                         assert (not trace.nodes[node] in nodes)
                         nodes.append(trace.nodes[node])
-                subgraphs_found.add(motif_index)
-                motifs.append(Motif(trace, nodes, motif_index))
 
-        # write the motifs to disk
-        if fuzzy: output_filename = 'motifs/subgraphs/{}/{}-motifs-fuzzy-collapsed-complete.motifs'.format(dataset, trace.base_id)
-        else: output_filename = 'motifs/subgraphs/{}/{}-motifs-collapsed-complete.motifs'.format(dataset, trace.base_id)
+                motifs.append(Motif(trace, nodes, motif_index))
 
         WriteMotifs(output_filename, motifs)
 

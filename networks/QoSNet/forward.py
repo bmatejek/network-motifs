@@ -1,3 +1,4 @@
+import os
 import math
 import struct
 
@@ -14,21 +15,21 @@ from keras.models import model_from_json
 from network_motifs.utilities import dataIO
 from network_motifs.utilities.constants import human_readable, request_types_per_dataset
 from network_motifs.networks.QoSNet.features import ReadFeatures
-from network_motifs.visualization import network_results
+from network_motifs.visualization.network_results import VisualizeNetworkDurations
 
 
 
-def CalculateResults(dataset, request_type, model, features, labels, parameters, with_motifs):
+def CalculateResults(dataset, request_type, model, features, labels, parameters, nnodes):
     # read in critical statistics
     statistics_filename = 'statistics/QoS-{}-{}.stat'.format(dataset, request_type)
     with open(statistics_filename, 'rb') as fd:
         avg_duration, stddev_duration, qos_threshold, = struct.unpack('fff', fd.read(12))
 
-    # # create method to visualize results
-    # nbins = 20
-    # binned_duration_errors = [0.0 for iv in range(nbins)]
-    # binned_correct_qos_detection = [0 for iv in range(nbins)]
-    # binned_occurrences = [0 for iv in range(nbins)]
+    # create method to visualize results
+    nbins = 20
+    binned_duration_errors = [0.0 for iv in range(nbins)]
+    binned_correct_qos_detection = [0 for iv in range(nbins)]
+    binned_occurrences = [0 for iv in range(nbins)]
 
     nexamples = len(features)
     predictions = model.predict(np.array(features))
@@ -61,24 +62,19 @@ def CalculateResults(dataset, request_type, model, features, labels, parameters,
         elif not qos_prediction and not qos_ground_truth: TN += 1
         else: assert (False)
 
-
-
-
-
-
-        # # how close to the end is this node
-        # bin = int(math.floor(features[iv][2] / nnodes * nbins))
-        # binned_duration_errors[bin] += abs(predicted_duration - actual_duration)
-        # if (prediction > 1 and label > 1) or (prediction < 1 and label < 1):
-        #     binned_correct_qos_detection[bin] += 1
-        # binned_occurrences[bin] += 1
+        # how close to the end is this node
+        bin = int(math.floor(features[iv][2] / nnodes[iv] * nbins))
+        binned_duration_errors[bin] += abs(predicted_duration - actual_duration)
+        if (prediction > 1 and label > 1) or (prediction < 1 and label < 1):
+            binned_correct_qos_detection[bin] += 1
+        binned_occurrences[bin] += 1
 
     mae /= nexamples
     mae_duration /= nexamples
     mae_baseline /= nexamples
 
-    if with_motifs: print ('{} {} With Motifs'.format(dataset, request_type))
-    else: print ('{} {} Without Motifs'.format(dataset, request_type))
+    print ('{} {}'.format(dataset, request_type))
+
     print ('  Mean Absolute Error (ZScore): {:0.2f}'.format(mae))
     if (mae_duration > 10**9):
         print ('  Mean Absolute Error (Duration): {:0.2f} seconds'.format(mae_duration / 10**9))
@@ -97,37 +93,39 @@ def CalculateResults(dataset, request_type, model, features, labels, parameters,
     print ('  Accuracy: {:0.2f}'.format(correct / nexamples))
 
     # update the results for each bin based on number of occurrences
-    # for bin in range(nbins):
-    #     if binned_occurrences[bin]:
-    #         binned_duration_errors[bin] /= binned_occurrences[bin]
-    #         binned_correct_qos_detection[bin] /= binned_occurrences[bin]
-    #         binned_correct_qos_detection[bin] *= 100.0
-    #
-    # return binned_correct_qos_detection, binned_duration_errors, binned_occurrences
+    for bin in range(nbins):
+        if binned_occurrences[bin]:
+            binned_duration_errors[bin] /= binned_occurrences[bin]
+            binned_correct_qos_detection[bin] /= binned_occurrences[bin]
+            binned_correct_qos_detection[bin] *= 100.0
+
+    return binned_correct_qos_detection, binned_duration_errors, binned_occurrences
 
 
 def Forward(dataset):
-    # run inference with and without motifs
-    for with_motifs in [True, False]:
-        # create a new model for every request type
-        for request_type in request_types_per_dataset[dataset]:
-            testing_filenames = dataIO.ReadTestingFilenames(dataset, request_type)
+    # create a new model for every request type
+    for request_type in request_types_per_dataset[dataset]:
+        testing_filenames = dataIO.ReadTestingFilenames(dataset, request_type)
 
-            testing_features, testing_labels = ReadFeatures(dataset, testing_filenames, with_motifs)
+        testing_features, testing_labels, nnodes = ReadFeatures(dataset, testing_filenames)
 
-            parameters = {}
-            parameters['first-layer'] = 512
-            parameters['second-layer'] = 256
-            parameters['third-layer'] = 128
-            parameters['batch_size'] = 1000
-            parameters['nfeatures'] = testing_features[0].size
+        parameters = {}
+        parameters['first-layer'] = 512
+        parameters['second-layer'] = 256
+        parameters['third-layer'] = 128
+        parameters['batch_size'] = 1000
+        parameters['nfeatures'] = testing_features[0].size
 
-            # get the prefix for where this model is saved
-            if with_motifs: model_prefix = 'networks/QoSNet/architectures/{}-request-type-{}-params-{}-{}-{}-batch-size-{}-with-motifs'.format(dataset, request_type, parameters['first-layer'], parameters['second-layer'], parameters['third-layer'], parameters['batch_size'])
-            else: model_prefix = 'networks/QoSNet/architectures/{}-request-type-{}-params-{}-{}-{}-batch-size-{}'.format(dataset, request_type, parameters['first-layer'], parameters['second-layer'], parameters['third-layer'], parameters['batch_size'])
+        # get the prefix for where this model is saved
+        model_prefix = 'networks/QoSNet/architectures/{}-request-type-{}-params-{}-{}-{}-batch-size-{}'.format(dataset, request_type, parameters['first-layer'], parameters['second-layer'], parameters['third-layer'], parameters['batch_size'])
 
-            # load the model with best weights
-            model = model_from_json(open('{}.json'.format(model_prefix), 'r').read())
-            model.load_weights('{}-best-loss.h5'.format(model_prefix))
+        # load the model with best weights
+        model = model_from_json(open('{}.json'.format(model_prefix), 'r').read())
+        model.load_weights('{}-best-loss.h5'.format(model_prefix))
 
-            CalculateResults(dataset, request_type, model, testing_features, testing_labels, parameters, with_motifs)
+        accuracies, duration_errors, occurrences = CalculateResults(dataset, request_type, model, testing_features, testing_labels, parameters, nnodes)
+
+        output_filename_prefix = '{}-results'.format(model_prefix)
+        title = '{} {}'.format(human_readable[dataset], request_type)
+
+        VisualizeNetworkDurations(output_filename_prefix, title, accuracies, duration_errors, occurrences)

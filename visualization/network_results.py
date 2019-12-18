@@ -48,13 +48,13 @@ def VisualizeNetworkDurations(output_filename_prefix, title, accuracies, duratio
     plt.xlabel('Percent Trace Completed', fontsize=16)
 
     max_error = max(duration_errors)
+    seconds = True
     if max_error > 10 ** 9:
-        seconds = True
         max_error /= 10 ** 9
     else:
-        seconds = False
+        max_error /= 1000
 
-    if seconds: plt.ylabel('Predicted Request Duration Errors (seconds)', fontsize=16)
+    if seconds: plt.ylabel('Predicted Duration Error (seconds)', fontsize=16)
     else:  plt.ylabel('Predicted Request Duration Errors', fontsize=16)
 
     plt.ylim([0, max_error])
@@ -67,7 +67,7 @@ def VisualizeNetworkDurations(output_filename_prefix, title, accuracies, duratio
         if not occurrences[bin]: continue
 
         xs.append(bin / nbins)
-        if seconds: ys.append(duration_errors[bin] / 10 ** 9)
+        if seconds: ys.append(duration_errors[bin] / 1000)
         else: ys.append(duration_errors[bin])
 
     plt.plot(xs, ys, label='Mean Absolute Error')
