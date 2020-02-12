@@ -11,7 +11,7 @@ plt.rc({'fontname', 'Ubuntu'})
 
 
 
-def VisualizeAccuracyCurves(dataset, request_type, accuracies, label):
+def VisualizeAccuracyCurves(dataset, request_type, accuracies):
     plt.figure()
 
     title = '{} {} Markov Chain Results'.format(human_readable[dataset], request_type)
